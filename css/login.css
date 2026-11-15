@@ -1,0 +1,45 @@
+/* Pantalla de inicio de sesión (DESIGN.md §4.1). */
+.login { min-height: 100dvh; display: grid; background: var(--bg); }
+.login-col { position: relative; padding: 12vh var(--gutter) 48px; overflow: hidden; }
+.carriles { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.car-l { stroke: var(--border-strong); stroke-width: 1; opacity: .4; shape-rendering: crispEdges; }
+.car-alt { stroke-dasharray: 2 10; opacity: .5; }
+.login-caja { position: relative; max-width: 400px; margin-inline: auto; }
+.login-marca { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; color: var(--accent-text); }
+.login-club { font: var(--fw-semibold) 18px/1.1 var(--font-display); letter-spacing: -0.01em; color: var(--text); }
+.login-marca .label { margin-top: 4px; }
+.login-titular { font-size: var(--fs-h1); letter-spacing: var(--ls-hero); line-height: 1.08; }
+.login-sub { margin-top: 12px; color: var(--text-2); max-width: 36ch; }
+.login-form { margin-top: 32px; display: grid; gap: 20px; }
+.campo-pass { position: relative; }
+.campo-pass input { padding-right: 56px !important; letter-spacing: .06em; font-family: var(--font-display) !important; font-feature-settings: "tnum" 1, "zero" 1; }
+.ojo { position: absolute; right: 4px; top: 4px; width: 44px; height: 44px; display: grid; place-items: center; color: var(--text-3); border-radius: var(--r-sm); }
+.ojo:hover { color: var(--text); }
+.campo-error { display: flex; gap: 8px; align-items: flex-start; color: var(--bad); font-size: var(--fs-small); line-height: 1.4; }
+.campo-error[hidden] { display: none; }
+.campo-error .ico { margin-top: 1px; }
+.check { display: flex; align-items: center; gap: 12px; min-height: 44px; cursor: pointer; font-size: var(--fs-small); color: var(--text-2); position: relative; }
+.check input { position: absolute; opacity: 0; width: 44px; height: 44px; left: -10px; margin: 0; cursor: pointer; }
+.check-caja { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--surface-2); color: transparent; flex: none; transition: background-color var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast); }
+.check input:checked + .check-caja { background: var(--accent); border-color: var(--accent); color: #fff; }
+.check input:focus-visible + .check-caja { box-shadow: var(--focus-ring); }
+.btn-login { width: 100%; min-height: 52px; gap: 10px; }
+.btn-login .spin { display: none; }
+.btn-login.cargando .spin { display: block; animation: gira .8s linear infinite; }
+.btn-login:disabled { opacity: .85; cursor: progress; }
+@keyframes gira { to { transform: rotate(360deg); } }
+.login-ayuda { margin-top: 24px; font-size: var(--fs-small); color: var(--text-2); }
+.login-tema { position: absolute; top: 12px; right: 12px; }
+.login-panel { display: none; }
+
+@media (min-width: 1024px) {
+  .login { grid-template-columns: 1fr 1fr; }
+  .login-col { padding: 0 var(--gutter); display: grid; align-items: center; }
+  .login-caja { width: 100%; }
+  .login-col .carriles { opacity: .5; }
+  .login-panel { display: block; position: relative; background: var(--surface-1); border-left: 1px solid var(--border); overflow: hidden; }
+  .login-hero { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(420px, 80%); }
+  .login-tiempo { font: var(--fw-semibold) clamp(4.5rem, 3rem + 5vw, 7rem)/1 var(--font-display); letter-spacing: var(--ls-hero); margin: 12px 0; font-variant-numeric: tabular-nums slashed-zero; }
+  .login-tiempo-sub { color: var(--ok); font: var(--fw-medium) 14px/1.3 var(--font-display); }
+  .login-hero { background: var(--surface-1); padding: 28px 0; }
+}

@@ -1,0 +1,133 @@
+/* Tokens del sistema "Carril nocturno" (DESIGN.md §3). */
+:root {
+  color-scheme: dark;
+
+  /* ---- Fondo y superficies (tema oscuro, por defecto) ---- */
+  --bg:            #060A12;   /* lienzo */
+  --surface-1:     #0B1220;   /* tarjetas, paneles base */
+  --surface-2:     #111B30;   /* elevado: hover, filas activas, inputs */
+  --surface-3:     #18253F;   /* menús, chips seleccionados, popovers */
+  --overlay:       rgba(3, 6, 12, .72);
+
+  /* ---- Bordes ---- */
+  --border:        #1A2742;   /* filo de 1 px estándar */
+  --border-strong: #2B3D63;   /* hover, inputs, separadores fuertes */
+  --border-hi:     rgba(255,255,255,.06); /* brillo en el borde superior de paneles */
+
+  /* ---- Texto ---- */
+  --text:          #F2F5FB;   /* primario */
+  --text-2:        #B4BFD6;   /* secundario */
+  --text-3:        #8696B5;   /* terciario: etiquetas, ejes, metadatos */
+  --text-on-accent:#FFFFFF;
+
+  /* ---- Acento (azul eléctrico, matiz ~222°, nunca violeta) ---- */
+  --accent:        #2F6BFF;   /* relleno de botón primario, barras, puntos */
+  --accent-hover:  #4A7FFF;
+  --accent-press:  #2558E6;
+  --accent-text:   #5B93FF;   /* enlaces y cifras acentuadas sobre fondo oscuro */
+  --accent-soft:   #102448;   /* fondo tintado: chip activo, récord */
+  --accent-line:   rgba(91,147,255,.45); /* borde de elementos acentuados */
+  --focus-ring:    0 0 0 2px var(--bg), 0 0 0 4px #5B93FF;
+
+  /* ---- Semánticos ---- */
+  --ok:            #3DDC97;   /* mejora, éxito */
+  --ok-soft:       rgba(61,220,151,.12);
+  --warn:          #FFB454;   /* alerta, dato dudoso */
+  --warn-soft:     rgba(255,180,84,.12);
+  --bad:           #FF7A7A;   /* empeora, error */
+  --bad-soft:      rgba(255,122,122,.12);
+
+  /* ---- Rampa azul para gráficos (de oscuro/antiguo a claro/reciente) ---- */
+  --c1: #1B3A8C;  --c2: #2756D6;  --c3: #3D7BFF;  --c4: #7FAEFF;  --c5: #C2D8FF;
+  --grid: rgba(134,150,181,.16);  /* rejilla de gráficos */
+
+  /* ---- Tipografía ---- */
+  --font-display: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-text:    "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --fs-hero:   clamp(3rem, 1.6rem + 6.4vw, 5.5rem);     /* 48 → 88: la marca héroe */
+  --fs-num-xl: clamp(2.25rem, 1.4rem + 3.8vw, 3.5rem);  /* 36 → 56: tiempo en tarjeta */
+  --fs-h1:     clamp(1.75rem, 1.35rem + 1.7vw, 2.5rem); /* 28 → 40 */
+  --fs-h2:     clamp(1.375rem, 1.2rem + .75vw, 1.75rem);/* 22 → 28 */
+  --fs-h3:     clamp(1.0625rem, 1rem + .3vw, 1.25rem);  /* 17 → 20 */
+  --fs-body:   1rem;       /* 16 */
+  --fs-small:  .875rem;    /* 14 */
+  --fs-label:  .75rem;     /* 12, mínimo absoluto en la app */
+
+  --lh-tight: 1.05;  --lh-head: 1.15;  --lh-body: 1.55;
+  --ls-hero: -0.035em; --ls-head: -0.02em; --ls-body: 0; --ls-label: .08em;
+  --fw-regular: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700;
+
+  /* ---- Espaciado (base 4) ---- */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px;
+  --gutter: 16px;            /* margen lateral móvil; 24 desde 768, 40 desde 1280 */
+  --nav-h-bottom: 64px;      /* barra inferior móvil, + safe-area */
+  --nav-w-side: 232px;       /* barra lateral escritorio */
+
+  /* ---- Radios ---- */
+  --r-xs: 6px;  --r-sm: 10px;  --r-md: 14px;  --r-lg: 20px;  --r-pill: 999px;
+
+  /* ---- Elevación (casi plana; solo flotantes llevan sombra) ---- */
+  --shadow-0: none;
+  --shadow-float: 0 12px 32px -8px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.4); /* menús, tooltips */
+  --shadow-sheet: 0 -16px 48px -12px rgba(0,0,0,.7);                          /* hoja inferior */
+
+  /* ---- Movimiento ---- */
+  --dur-fast: 120ms;   /* hover, pulsación */
+  --dur-base: 220ms;   /* chips, cambio de tema, menús */
+  --dur-slow: 420ms;   /* entrada de pantalla */
+  --dur-draw: 900ms;   /* trazado de curva */
+  --ease-out:    cubic-bezier(.22, 1, .36, 1);   /* entradas */
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);   /* cambios de estado */
+  --ease-snap:   cubic-bezier(.3, 0, 0, 1);      /* pulsación */
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg:            #F3F6FC;
+  --surface-1:     #FFFFFF;
+  --surface-2:     #EAF0FA;
+  --surface-3:     #DCE5F4;
+  --overlay:       rgba(10,18,36,.45);
+
+  --border:        #D5DFEF;
+  --border-strong: #AFBDD6;
+  --border-hi:     rgba(255,255,255,.9);
+
+  --text:          #0A1224;
+  --text-2:        #44516D;
+  --text-3:        #52607D;
+  --text-on-accent:#FFFFFF;
+
+  --accent:        #1D55E8;
+  --accent-hover:  #2A62F0;
+  --accent-press:  #1745C2;
+  --accent-text:   #1A4FD6;
+  --accent-soft:   #E3ECFF;
+  --accent-line:   rgba(29,85,232,.40);
+  --focus-ring:    0 0 0 2px var(--bg), 0 0 0 4px #1D55E8;
+
+  --ok:            #0A7245;  --ok-soft:   rgba(10,114,69,.10);
+  --warn:          #8A5200;  --warn-soft: rgba(138,82,0,.10);
+  --bad:           #B92626;  --bad-soft:  rgba(185,38,38,.09);
+
+  --c1: #0F2F8F;  --c2: #1D55E8;  --c3: #4F83F0;  --c4: #8FB4F5;  --c5: #C2D8FF;
+  --grid: rgba(10,18,36,.10);
+
+  --shadow-float: 0 12px 28px -8px rgba(10,24,60,.22), 0 2px 6px rgba(10,24,60,.10);
+  --shadow-sheet: 0 -12px 36px -12px rgba(10,24,60,.25);
+}
+
+/* ---- Extras del portal ---- */
+:root {
+  --fs-num-l: clamp(1.625rem, 1.2rem + 1.8vw, 2.25rem);
+  --max-w: 1120px;
+  --viewbar-h: 40px;
+  --sticky-top: 0px;
+  --top-h: 56px;
+}
+@media (min-width: 768px)  { :root { --gutter: 24px; } }
+@media (min-width: 1280px) { :root { --gutter: 40px; --max-w: 1200px; } }
+
