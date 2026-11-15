@@ -34,7 +34,7 @@
 .hero-card.hero-prog { border-radius: var(--r-lg); padding: var(--s-5); }
 .hero-tiempo { font: var(--fw-semibold) var(--fs-hero)/var(--lh-tight) var(--font-display); letter-spacing: var(--ls-hero); margin-block: 4px; }
 .hero-linea { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; min-height: 24px; }
-.hero-linea .var { font-size: 14px; font-weight: 500; }
+.hero-linea .var { font-size: 14px; font-weight: 500; white-space: normal; line-height: 1.35; }
 .hero-sub { font-size: var(--fs-small); color: var(--text-2); overflow-wrap: anywhere; }
 .hero-spark { margin-top: 8px; }
 .hero-spark svg { width: 100%; }

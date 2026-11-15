@@ -76,10 +76,10 @@ export function render(cont, p, ctx) {
         <p class="hero-tiempo num" data-s="${m.s}">${esc(m.t)}</p>
         <div class="hero-linea">
           ${m.esRP ? chipRP() : ''}
-          ${m.delta != null && m.delta > 0 ? variacion(m.delta, { largo: true }).replace('más rápido', 'más rápido que tu anterior') : ''}
+          ${m.delta != null && m.delta > 0 ? variacion(m.delta, { largo: true, sufijo: ' respecto a tu mejor marca anterior' }) : ''}
         </div>
         <p class="hero-sub">${esc(fechaCorta(m.f))} · ${esc(tituloEvento(m.ev))}</p>
-        <div class="hero-spark">${sparkline(valores, { fluido: true, alto: 64, ancho: 320, clase: 'spark-grande', etiqueta: `Últimas ${valores.length} marcas de ${principal.dist} m ${principal.est}` })}<p class="hero-spark-cap">Últimas ${valores.length} ${plural(valores.length, 'marca', 'marcas')} · ${principal.marcas.length} en total</p></div>
+        <div class="hero-spark">${sparkline(valores, { fluido: true, alto: 64, ancho: 320, clase: 'spark-grande', etiqueta: `Últimas ${valores.length} marcas de ${principal.dist} m ${principal.est}, de la más antigua a la más reciente: ${valores.map(fmtTiempo).join(', ')}. La línea baja cuando mejoras` })}<p class="hero-spark-cap">Últimas ${valores.length} ${plural(valores.length, 'marca', 'marcas')} · ${principal.marcas.length} en total</p></div>
         <button type="button" class="btn btn-sec hero-ver" data-ver>Ver progresión ${icono('chev-der', 18)}</button>
       </section>`;
   }
@@ -103,7 +103,7 @@ export function render(cont, p, ctx) {
         <ul class="lista-filas lista-comp">${orden.map((m) => `
           <li class="fila-rp">
             <div class="fr-main"><p class="fr-t">${esc(m.p)}</p><p class="fr-s">${m.pu ? `${ordinal(m.pu)} lugar` : 'Sin puesto'}${m.exh ? ' · exhibición' : ''}</p></div>
-            <div class="fr-der">${m.esRP ? chipRP(true) : m.primera ? '<span class="tag">Primera vez</span>' : ''}<span class="fr-tiempo num ${m.esRP ? 'acento' : ''}">${esc(m.t)}</span></div>
+            <div class="fr-der">${m.esRP ? chipRP(true) : m.primera ? '<span class="tag">Primera vez</span>' : ''}<span class="col-tv"><span class="fr-tiempo num ${m.esRP ? 'acento' : ''}">${esc(m.t)}</span>${m.esRP && m.delta > 0 ? variacion(m.delta) : ''}</span></div>
           </li>`).join('')}</ul>
       </section>`;
   }

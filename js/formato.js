@@ -23,6 +23,36 @@ export function fmtDelta(s) {
   return fmtTiempo(Math.abs(s));
 }
 
+/**
+ * Cambio de un tiempo de nado. delta = tiempo anterior - tiempo nuevo (> 0: el tiempo BAJÓ = mejora).
+ * Convención única de todas las vistas de tiempos: bajar es bueno (▼ −3.71 s, en color de mejora);
+ * subir es neutro y tenue (▲ +0.85 s). Nunca se usa para fuerza, cuerpo ni otras métricas.
+ * Devuelve { tipo: 'baja'|'sube'|'igual', n: '3.71', u: ' s'|'' } o null.
+ */
+export function cambioTiempo(delta) {
+  if (delta == null || !isFinite(delta)) return null;
+  if (Math.abs(delta) < 0.005) return { tipo: 'igual', n: '0.00', u: ' s' };
+  const a = Math.abs(delta);
+  return { tipo: delta > 0 ? 'baja' : 'sube', n: a >= 60 ? fmtTiempo(a) : a.toFixed(2), u: a >= 60 ? '' : ' s' };
+}
+
+/**
+ * HTML del marcador de variación de un tiempo (un solo lugar para todas las vistas).
+ *  corto: "▼ −3.71 s" (verde, mejora) · "▲ +0.85 s" (tenue, neutro); el símbolo es solo decoración y
+ *         un texto oculto dice "bajó 3.71 s" / "subió 0.85 s" para lectores de pantalla.
+ *  largo: "▼ Bajaste 3.71 s" / "▲ Subió 0.85 s", con `sufijo` opcional (" respecto a tu anterior").
+ */
+export function variacionTiempo(delta, { largo = false, sufijo = '' } = {}) {
+  const c = cambioTiempo(delta);
+  if (!c) return '';
+  if (c.tipo === 'igual') return '<span class="var var-igual">= igual</span>';
+  const baja = c.tipo === 'baja';
+  const cls = baja ? 'var-baja' : 'var-sube';
+  const sr = `${baja ? 'bajó' : 'subió'} ${c.n}${c.u}`;
+  if (largo) return `<span class="var ${cls}"><span aria-hidden="true">${baja ? '▼' : '▲'} </span>${baja ? 'Bajaste' : 'Subió'} ${c.n}${c.u}${esc(sufijo)}</span>`;
+  return `<span class="var ${cls}"><span aria-hidden="true">${baja ? '▼ −' : '▲ +'}${c.n}${c.u}</span><span class="sr-only">${sr}</span></span>`;
+}
+
 export function parseISO(f) {
   if (!f) return null;
   const [y, m, d] = String(f).split('-').map(Number);

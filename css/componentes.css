@@ -43,6 +43,12 @@
 .var-ok { color: var(--ok); }
 .var-mal { color: var(--bad); }
 .var-igual { color: var(--text-3); }
+/* tiempo con su variación debajo, alineados a la derecha */
+.col-tv { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+/* Tiempos de nado: bajar es mejorar (verde); subir es neutro y tenue, sin alarma */
+.var-baja { color: var(--ok); }
+.var-sube { color: var(--text-3); }
+.var-baja, .var-sube { font-variant-numeric: tabular-nums; }
 .ok { color: var(--ok); }
 
 /* ---------- Pestañas ---------- */
@@ -105,6 +111,7 @@
 .g-lectura { min-height: 86px; padding: 2px 0 10px; }
 .g-lec-fila { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .g-lec-t { font: var(--fw-semibold) 26px/1.1 var(--font-display); letter-spacing: -0.02em; }
+.g-lec-fila .var { font-size: 14px; font-weight: 500; white-space: normal; line-height: 1.35; }
 .g-lec-serie { font: var(--fw-medium) 12px/1 var(--font-display); color: var(--text-3); padding: 4px 8px; background: var(--surface-2); border-radius: var(--r-pill); }
 .g-lec-meta { margin-top: 4px; font-size: var(--fs-small); color: var(--text-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
 .g-lec-vacio { color: var(--text-3); font-size: var(--fs-small); }
@@ -115,18 +122,22 @@
 .g-tick { stroke: var(--grid); }
 .g-eje { fill: var(--text-3); font: 500 12px var(--font-display); font-variant-numeric: tabular-nums; }
 .g-nota { fill: var(--text-3); font: 500 12px var(--font-display); }
-.g-linea { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.g-linea { fill: none; stroke: var(--text-3); stroke-opacity: .6; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }  /* base neutra: tramos donde el tiempo sube */
 .g-linea.fina { stroke-width: 1.5; }
+.g-baja { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }  /* tramos donde el tiempo BAJA */
+.g-baja.fina { stroke-width: 2; }
 .g-area { fill: var(--accent); fill-opacity: .08; stroke: none; }
 .g-paso { fill: none; stroke: var(--accent-line); stroke-width: 1.5; stroke-dasharray: 4 4; }
-.g-dot { fill: var(--bg); stroke: var(--accent); stroke-width: 2; }
+.g-dot { fill: var(--bg); stroke: var(--text-3); stroke-width: 2; }
+.g-dot.baja { stroke: var(--accent); }
 .g-dot-rp { fill: var(--accent); stroke: var(--bg); stroke-width: 1.5; }
 .g-anillo { fill: var(--accent-soft); fill-opacity: .6; stroke: var(--accent-line); stroke-width: 1; }
 .g-etiqueta { fill: var(--text); font: 600 12px var(--font-display); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
 .g-mejor { fill: var(--accent-text); font: 500 12px var(--font-display); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
-.g-b .g-linea { stroke: var(--c4); stroke-dasharray: 6 4; }
+.g-b .g-linea { stroke: var(--c4); stroke-opacity: 1; stroke-dasharray: 6 4; }
+.g-b .g-baja { display: none; }
 .g-b .g-area { fill: var(--c4); fill-opacity: .05; }
-.g-b .g-dot { stroke: var(--c4); }
+.g-b .g-dot, .g-b .g-dot.baja { stroke: var(--c4); }
 .g-b .g-dot-rp { fill: var(--c4); }
 .g-b .g-anillo { stroke: var(--c4); fill: transparent; }
 .g-b .g-paso { stroke: var(--c4); stroke-opacity: .5; }
@@ -137,6 +148,8 @@
 .g-ley { display: inline-flex; align-items: center; gap: 8px; }
 .g-ley i { width: 18px; height: 0; border-top: 2px solid var(--accent); }
 .g-ley-b i { border-top: 2px dashed var(--c4); }
+.g-ley i.g-ley-baja { border-top: 3px solid var(--accent); }
+.g-ley i.g-ley-sube { border-top: 2px solid var(--text-3); opacity: .6; }
 .g-ley i.g-ley-paso { width: 18px; border-top: 1.5px dashed var(--accent-line); }
 .g-ley i.g-ley-rp { width: 10px; height: 10px; border: 0; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .g-tip { position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; display: grid; gap: 1px; padding: 8px 12px; background: var(--surface-3); border: 1px solid var(--border-strong); border-radius: var(--r-sm); box-shadow: var(--shadow-float); font-size: 13px; color: var(--text-2); max-width: 280px; }
@@ -144,6 +157,7 @@
 .g-tip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tip-rp { color: var(--accent-text); font-weight: 600; font-family: var(--font-display); }
 /* entrada del gráfico */
+.g-svg.anim .g-baja { animation: aparece-g var(--dur-slow) var(--ease-out) .6s both; }
 .g-svg.anim .g-area { animation: aparece-g var(--dur-slow) var(--ease-out) .5s both; }
 .g-svg.anim .g-paso { animation: aparece-g var(--dur-slow) var(--ease-out) .7s both; }
 .g-svg.anim .g-rp, .g-svg.anim .g-dot, .g-svg.anim .g-etiqueta, .g-svg.anim .g-mejor { animation: aparece-g 200ms var(--ease-out) 900ms both; }

@@ -60,7 +60,7 @@ export function mostrarLogin(raiz, { onExito, mensaje = '' }) {
         <div class="login-hero">
           <p class="label">100 m libre · 25 m · ejemplo</p>
           <p class="login-tiempo num">1:05.55</p>
-          <p class="login-tiempo-sub">▲ 0.84 s más rápido que tu anterior</p>
+          <p class="login-tiempo-sub">▼ Bajaste 0.84 s respecto a tu anterior</p>
         </div>
       </aside>
     </div>`);

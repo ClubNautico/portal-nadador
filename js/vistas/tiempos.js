@@ -148,7 +148,7 @@ export function render(cont, p, ctx) {
           pr, c,
           serie: {
             id: c, etiqueta: `${c} m`, clase: i === 0 ? 'a' : 'b',
-            puntos: pr ? pr.marcas.map((m, j) => ({ id: `${c}-${j}`, x: m.ms, y: m.s, t: m.t, ev: m.ev, pu: m.pu, ed: m.ed, rp: m.esRP, exh: m.exh, c })) : [],
+            puntos: pr ? pr.marcas.map((m, j) => ({ id: `${c}-${j}`, x: m.ms, y: m.s, t: m.t, ev: m.ev, pu: m.pu, ed: m.ed, rp: m.esRP, exh: m.exh, c, delta: m.delta, deltaBase: 'tu mejor marca anterior' })) : [],
           },
         };
       }).filter((x) => x.pr);
@@ -164,7 +164,7 @@ export function render(cont, p, ctx) {
       $('#g-titulo').textContent = `${nombre.charAt(0).toUpperCase()}${nombre.slice(1)} · ${estado.pool === 'ambas' ? 'piscinas de 25 y 50 m' : `piscina de ${estado.pool} m`}`;
       const pts = ss.flatMap((s) => s.serie.puntos);
       const desc = pts.length
-        ? `Progresión de ${nombre}: de ${pts[0].t} en ${fechaMes(new Date(pts[0].x).toISOString().slice(0, 10))} a ${pts[pts.length - 1].t} en ${fechaMes(new Date(pts[pts.length - 1].x).toISOString().slice(0, 10))}. La lista de marcas debajo contiene los mismos datos`
+        ? `Progresión de ${nombre} (bajar el tiempo es mejorar): de ${pts[0].t} en ${fechaMes(new Date(pts[0].x).toISOString().slice(0, 10))} a ${pts[pts.length - 1].t} en ${fechaMes(new Date(pts[pts.length - 1].x).toISOString().slice(0, 10))}. La lista de marcas debajo contiene los mismos datos`
         : `Progresión de ${nombre}`;
       const opts = { ariaLabel: desc, series: ss.map((s) => s.serie), activo: undefined, onActivo: (pt) => marcarFila(pt.id) };
       if (!grafico) grafico = crearGraficoProgresion($('#g-host'), { ...opts, activo: undefined });
@@ -186,13 +186,13 @@ export function render(cont, p, ctx) {
             <article class="card hero-card hero-prog">
               <p class="label">Mejor marca · ${etiqueta}</p>
               <p class="hero-tiempo num" data-s="${st.mejor.s}">${esc(st.mejor.t)}</p>
-              <div class="hero-linea">${st.mejor.esRP ? chipRP() : ''}${st.mejor.delta > 0 ? variacion(st.mejor.delta, { largo: true }) : ''}</div>
+              <div class="hero-linea">${st.mejor.esRP ? chipRP() : ''}${st.mejor.delta > 0 ? variacion(st.mejor.delta, { largo: true, sufijo: ' respecto a tu mejor marca anterior' }) : ''}</div>
               <p class="hero-sub">${esc(fechaCorta(st.mejor.f))} · ${esc(tituloEvento(st.mejor.ev))}</p>
             </article>
             <div class="metricas">
               <div class="metrica"><p class="label">Primera marca</p><p class="metrica-v num">${esc(st.primera.t)}</p><p class="metrica-s">${esc(fechaCorta(st.primera.f))}</p></div>
               <div class="metrica"><p class="label">Mejora total</p>${mejora
-                ? `<p class="metrica-v num ok">▲ ${st.mejoraS.toFixed(2)}<span class="u"> s</span></p><p class="metrica-s">${(st.mejoraPct * 100).toFixed(1).replace('.', ',')} % más rápido</p>`
+                ? `<p class="metrica-v num ok"><span aria-hidden="true">▼ −</span><span class="sr-only">Bajaste </span>${st.mejoraS.toFixed(2)}<span class="u"> s</span></p><p class="metrica-s">−${(st.mejoraPct * 100).toFixed(1).replace('.', ',')} % desde tu primera marca</p>`
                 : `<p class="metrica-v num sin">–</p><p class="metrica-s">${soloUna ? 'Con tu próxima marca verás el cambio' : 'Aún sin mejora sobre tu primera marca'}</p>`}</div>
               <div class="metrica"><p class="label">Veces nadada</p><p class="metrica-v num">${st.veces}</p><p class="metrica-s">${st.veces === 1 ? 'una marca registrada' : 'marcas registradas'}</p></div>
             </div>
@@ -393,7 +393,7 @@ export function render(cont, p, ctx) {
             <li class="tl-prueba">
               <div class="tp-main"><p class="tp-n">${esc(m.p)}${g.items.some((x) => x.c !== m.c) ? ` <span class="tp-c">${m.c} m</span>` : ''}</p>
                 <p class="tp-s">${m.pu ? `${ordinal(m.pu)} lugar` : 'Sin puesto'}${m.ed ? ` · ${m.ed} años` : ''}${m.exh ? ' · <span class="tag">Exhibición</span>' : ''}</p></div>
-              <div class="tp-der">${m.esRP ? chipRP(true) : m.primera ? '<span class="tag">Primera vez</span>' : ''}<span class="tp-t num ${m.esRP ? 'acento' : ''}">${esc(m.t)}</span></div>
+              <div class="tp-der">${m.esRP ? chipRP(true) : m.primera ? '<span class="tag">Primera vez</span>' : ''}<span class="col-tv"><span class="tp-t num ${m.esRP ? 'acento' : ''}">${esc(m.t)}</span>${m.esRP && m.delta > 0 ? variacion(m.delta) : ''}</span></div>
             </li>`).join('')}</ul>
         </article>`);
     }

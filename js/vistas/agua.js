@@ -50,7 +50,7 @@ function preparar(p) {
   return { tests, pruebas };
 }
 
-/** Test inmediatamente anterior (otro día) de la misma prueba; si hubo varios ese día, el más rápido. */
+/** Test inmediatamente anterior (otro día) de la misma prueba; si hubo varios ese día, el de menor tiempo. */
 function anteriorDe(pr, t) {
   const previos = pr.tests.filter((x) => x.ms < t.ms);
   if (!previos.length) return null;
@@ -167,7 +167,7 @@ export function render(cont, p, ctx) {
     const a = {
       id: 'tests', etiqueta: 'Tests de agua', clase: 'a',
       puntos: pr.tests.map((t, j) => ({
-        id: `t-${j}`, x: t.ms, y: t.s, t: hora(t),
+        id: `t-${j}`, x: t.ms, y: t.s, t: hora(t), delta: (() => { const a = anteriorDe(pr, t); return a ? a.s - t.s : null; })(), deltaBase: 'el test anterior',
         ev: `Test de agua${t.br != null ? ` · ${t.br} brazadas` : ''}${t.aprox ? ' · fecha aproximada' : ''}`,
         rp: false,
       })),
@@ -193,7 +193,7 @@ export function render(cont, p, ctx) {
       : pr.sal ? 'Este test se hace con salida; no tiene una marca de competencia equivalente.' : 'Aún no tienes marca de competencia en esta prueba para comparar.';
     const primero = pr.tests[0], ult = pr.ultimo;
     const desc = pr.tests.length > 1
-      ? `Progresión de tus tests de ${nombre}: de ${hora(primero)} el ${fechaTxt(primero.f, primero.aprox)} a ${hora(ult)} el ${fechaTxt(ult.f, ult.aprox)}.${comp ? ` Tu mejor en competencia es ${comp.t || fmtTiempo(comp.s)}.` : ''}`
+      ? `Progresión de tus tests de ${nombre} (bajar el tiempo es mejorar): de ${hora(primero)} el ${fechaTxt(primero.f, primero.aprox)} a ${hora(ult)} el ${fechaTxt(ult.f, ult.aprox)}.${comp ? ` Tu mejor en competencia es ${comp.t || fmtTiempo(comp.s)}.` : ''}`
       : `Test de ${nombre}: ${hora(ult)} el ${fechaTxt(ult.f, ult.aprox)}.`;
     const opts = { ariaLabel: desc, series: series(pr), activo: `t-${pr.tests.length - 1}` };
     if (!grafico) grafico = crearGraficoProgresion($('#ag-g'), opts);
@@ -217,8 +217,8 @@ export function render(cont, p, ctx) {
       brecha = Math.abs(g) < 0.005
         ? `Tu mejor test iguala tu mejor marca en competencia (${esc(comp.t || fmtTiempo(comp.s))}).`
         : g > 0
-          ? `Tu mejor test está a <b class="num">${fmtDelta(g)} s</b> de tu mejor marca en competencia (${esc(comp.t || fmtTiempo(comp.s))}).`
-          : `Tu mejor test es <b class="num">${fmtDelta(g)} s</b> más rápido que tu mejor marca en competencia (${esc(comp.t || fmtTiempo(comp.s))}).`;
+          ? `Tu mejor test está <b class="num">${fmtDelta(g)} s</b> por encima de tu mejor marca en competencia (${esc(comp.t || fmtTiempo(comp.s))}).`
+          : `Tu mejor test está <b class="num">${fmtDelta(g)} s</b> por debajo de tu mejor marca en competencia (${esc(comp.t || fmtTiempo(comp.s))}).`;
     }
 
     // brazadas
@@ -231,7 +231,7 @@ export function render(cont, p, ctx) {
       if (ant) {
         const d = ant.br - ultimo.br;
         brS += d === 0 ? '<p class="metrica-s var-igual">= igual que el test anterior</p>'
-          : `<p class="metrica-s"><span class="var ${d > 0 ? 'var-ok' : 'var-mal'}">${d > 0 ? '▲' : '▼'} ${Math.abs(d)} ${d > 0 ? 'menos' : 'más'}</span> que el test anterior</p>`;
+          : `<p class="metrica-s"><span class="var ${d > 0 ? 'var-baja' : 'var-sube'}"><span aria-hidden="true">${d > 0 ? '▼ −' : '▲ +'}${Math.abs(d)} br</span><span class="sr-only">${d > 0 ? 'bajó' : 'subió'} ${Math.abs(d)} ${Math.abs(d) === 1 ? 'brazada' : 'brazadas'}</span></span> vs. el test anterior</p>`;
       } else brS += '<p class="metrica-s">Primer test con brazadas</p>';
       if (conBr.length >= 3) {
         const primeraBr = conBr[0].br;
@@ -263,7 +263,7 @@ export function render(cont, p, ctx) {
           <div class="metrica"><p class="label">Frente a tu mejor</p>
             ${unico || esMejor
               ? `<p class="metrica-v num ok">${unico ? '–' : '= mejor'}</p><p class="metrica-s">${unico ? 'Con tu próximo test verás el cambio' : 'Tu último test es tu mejor marca de entrenamiento'}</p>`
-              : `<p class="metrica-v num">+${esc(fmtDelta(dif))}<span class="u"> s</span></p><p class="metrica-s">más lento que tu mejor test</p>`}
+              : `<p class="metrica-v num"><span aria-hidden="true">▲ +</span><span class="sr-only">Subió </span>${esc(fmtDelta(dif))}<span class="u"> s</span></p><p class="metrica-s">por encima de tu mejor test</p>`}
           </div>
           <div class="metrica"><p class="label">Brazadas del último</p>${brV}${brS}</div>
         </div>
@@ -322,7 +322,7 @@ export function render(cont, p, ctx) {
         }).join('')}</tbody>
       </table>
     </div>
-    <p class="mx-nota rend-pad">${rombo(8)} Resaltado: tu mejor test de cada prueba (con 2 o más fechas). <span class="mx-br-nota">br = brazadas.</span>${hayVarios ? ' Si hubo dos tests el mismo día, se muestra el más rápido.' : ''}${hayAprox ? ' ~ = el día exacto no quedó registrado.' : ''}</p>`;
+    <p class="mx-nota rend-pad">${rombo(8)} Resaltado: tu mejor test de cada prueba (con 2 o más fechas). <span class="mx-br-nota">br = brazadas.</span>${hayVarios ? ' Si hubo dos tests el mismo día, se muestra el de menor tiempo.' : ''}${hayAprox ? ' ~ = el día exacto no quedó registrado.' : ''}</p>`;
 
   const wrap = mx.querySelector('.mx-wrap');
   const borde = () => {

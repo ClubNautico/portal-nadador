@@ -11,7 +11,7 @@ export function msDe(f) {
 
 /**
  * Añade al perfil descifrado los campos derivados (prefijo "_"):
- *  _t        marcas ordenadas por fecha; cada una con ms, mejorAntes y delta (>0 = más rápido que la mejor anterior)
+ *  _t        marcas ordenadas por fecha; cada una con ms, mejorAntes y delta (mejor anterior - este tiempo; >0 = el tiempo bajó = mejora)
  *  _pruebas  Map "Libre|100|25" -> { key, est, dist, c, p, marcas[], mejor, primera }
  *  _comps    competencias agrupadas, de la más antigua a la más reciente
  */

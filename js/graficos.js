@@ -1,11 +1,11 @@
 // Primitivas de gráficos SVG propias. Ver CONTRATO_VISTAS.md.
 //   crearGraficoProgresion(host, opts)  -> { update, setActive, activo, destroy }
-//   sparkline(valores, opts)            -> cadena SVG
+//   sparkline(valores, opts)            -> cadena SVG (eje natural: valor mayor = más arriba; para tiempos, bajar = descender)
 //   barras(items, opts)                 -> cadena HTML
 //   columnas(items, opts)               -> cadena SVG
 //   radar(ejes, opts)                   -> cadena SVG
-//   sparklineMas(valores, opts)         -> cadena SVG (más = arriba)
-import { fmtTiempo, fechaCorta, ordinal, esc, MESES, tituloEvento } from './formato.js';
+//   sparklineMas(valores, opts)         -> cadena SVG (igual que sparkline; nombre para métricas donde más es mejor)
+import { fmtTiempo, fechaCorta, ordinal, esc, MESES, tituloEvento, variacionTiempo } from './formato.js';
 import { rombo } from './iconos.js';
 
 const reducir = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -58,7 +58,8 @@ const etiquetaX = (t) => (t.st >= 12 ? String(t.y) : t.st === 1 && t.m !== 0 ? M
 /**
  * opts = {
  *   ariaLabel: string,
- *   series: [{ id, etiqueta, clase: 'a'|'b', puntos: [{ id, x(ms), y(seg), t, fecha, ev, pu, ed, rp, exh, c }] }],  // máx. 2
+ *   series: [{ id, etiqueta, clase: 'a'|'b', puntos: [{ id, x(ms), y(seg), t, fecha, ev, pu, ed, rp, exh, c, delta?, deltaBase? }] }],  // máx. 2
+ *     Eje Y natural para tiempos: menos tiempo = más ABAJO; bajar es mejorar. delta (opcional) = tiempo anterior - este (> 0: bajó); deltaBase: "tu mejor marca anterior" (texto de la lectura).
  *   activo?: id,
  *   onActivo?: (punto) => void
  * }
@@ -109,7 +110,7 @@ export function crearGraficoProgresion(host, opts) {
     if (!p) { lectura.innerHTML = '<div class="g-lec-vacio">Sin marcas para mostrar</div>'; return; }
     const serie = o.series.length > 1 ? `<span class="g-lec-serie">${esc(p.serie.etiqueta)}</span>` : '';
     lectura.innerHTML = `
-      <div class="g-lec-fila"><span class="g-lec-t num">${esc(p.t)}</span>${p.rp ? `<span class="chip-rp">${rombo(8)}RÉCORD PERSONAL</span>` : ''}${serie}</div>
+      <div class="g-lec-fila"><span class="g-lec-t num">${esc(p.t)}</span>${p.rp ? `<span class="chip-rp">${rombo(8)}RÉCORD PERSONAL</span>` : ''}${variacionTiempo(p.delta, { largo: true, sufijo: p.deltaBase ? ` respecto a ${p.deltaBase}` : '' })}${serie}</div>
       <div class="g-lec-meta">${esc(textoLectura(p))}${metaLectura(p) ? ` · ${esc(metaLectura(p))}` : ''}</div>`;
   }
 
@@ -130,14 +131,14 @@ export function crearGraficoProgresion(host, opts) {
     let ymin = Math.min(...ys), ymax = Math.max(...ys);
     let lo, hi;
     if (ymax - ymin < 1e-6) { const pad = Math.max(ymin * 0.02, 0.3); lo = ymin - pad; hi = ymax + pad; }
-    else { const pad = Math.max((ymax - ymin) * 0.1, ymin * 0.01); lo = ymin - pad; hi = ymax + pad; }
+    else { const pad = Math.max((ymax - ymin) * 0.1, ymin * 0.01); lo = ymin - pad * 2; hi = ymax + pad; }  // más aire abajo: ahí va la etiqueta de la mejor marca
     const xs = todos.map((p) => p.x);
     let xmin = Math.min(...xs), xmax = Math.max(...xs);
     if (xmax - xmin < 86400000 * 2) { xmin -= 86400000 * 60; xmax += 86400000 * 60; }
     else { const pad = (xmax - xmin) * 0.04; xmin -= pad; xmax += pad; }
 
     const X = (x) => L + ((x - xmin) / (xmax - xmin)) * pw;
-    const Y = (y) => T + ((y - lo) / (hi - lo)) * ph;  // eje invertido: menos tiempo = más arriba
+    const Y = (y) => T + ph - ((y - lo) / (hi - lo)) * ph;  // eje natural: menos tiempo = más abajo (bajar es mejorar)
     geo = { X, Y, L, R, T, B, pw, ph };
 
     const { t: yt, paso } = ticksY(lo, hi, H < 280 ? 4 : 5);
@@ -149,7 +150,7 @@ export function crearGraficoProgresion(host, opts) {
     for (const v of yt) s += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text class="g-eje" x="${L - 8}" y="${Y(v) + 4}" text-anchor="end">${fmtEjeY(v, paso)}</text>`;
     s += `</g><g class="g-xs">`;
     for (const t of xt) s += `<line class="g-tick" x1="${X(t.ms)}" x2="${X(t.ms)}" y1="${T + ph}" y2="${T + ph + 4}"/><text class="g-eje" x="${X(t.ms)}" y="${H - 8}" text-anchor="middle">${etiquetaX(t)}</text>`;
-    s += `</g><text class="g-nota" x="${L}" y="14">↑ más rápido</text>`;
+    s += `</g><text class="g-nota" x="${L}" y="14">↓ bajar es mejorar</text>`;
 
     // series
     const muchos = todos.length > 25;
@@ -158,18 +159,19 @@ export function crearGraficoProgresion(host, opts) {
       if (!pts.length) continue;
       const cls = serie.clase || 'a';
       const mejor = pts.reduce((m, p) => (p.y < m.y ? p : m), pts[0]);
-      let linea = '', paso_d = '', best = Infinity;
+      let linea = '', baja = '', paso_d = '', best = Infinity;
       pts.forEach((p, i) => {
         linea += `${i ? 'L' : 'M'}${f1(X(p.x))} ${f1(Y(p.y))}`;
+        if (i && p.y < pts[i - 1].y - 1e-9) baja += `M${f1(X(pts[i - 1].x))} ${f1(Y(pts[i - 1].y))}L${f1(X(p.x))} ${f1(Y(p.y))}`;
         if (p.y < best - 1e-9) { paso_d += i === 0 || !paso_d ? `M${f1(X(p.x))} ${f1(Y(p.y))}` : `H${f1(X(p.x))}V${f1(Y(p.y))}`; best = p.y; }
       });
       paso_d += `H${W - R}`;
       s += `<g class="g-serie g-${cls}" data-serie="${esc(serie.id)}">`;
+      // línea base neutra (los tramos donde el tiempo sube) y encima, en acento, los tramos donde BAJA
       if (pts.length > 1) {
-        const area = `${linea}L${f1(X(pts[pts.length - 1].x))} ${T + ph}L${f1(X(pts[0].x))} ${T + ph}Z`;
-        s += `<path class="g-area" d="${area}"/>`;
         s += `<path class="g-paso" d="${paso_d}"/>`;
         s += `<path class="g-linea${muchos ? ' fina' : ''}" d="${linea}"/>`;
+        if (baja) s += `<path class="g-baja${muchos ? ' fina' : ''}" d="${baja}"/>`;
       } else {
         s += `<path class="g-paso" d="${paso_d}"/>`;
       }
@@ -180,7 +182,8 @@ export function crearGraficoProgresion(host, opts) {
         if (rp) {
           s += `<g class="g-rp" style="--d:${Math.min(900, 900 + i * 4)}ms"><circle class="g-anillo" cx="${f1(X(p.x))}" cy="${f1(Y(p.y))}" r="9"/><circle class="g-dot-rp" cx="${f1(X(p.x))}" cy="${f1(Y(p.y))}" r="5"/></g>`;
         } else if (!muchos || esUlt) {
-          s += `<circle class="g-dot" cx="${f1(X(p.x))}" cy="${f1(Y(p.y))}" r="3.5"/>`;
+          const bajo = i > 0 && p.y < pts[i - 1].y - 1e-9;
+          s += `<circle class="g-dot${bajo ? ' baja' : ''}" cx="${f1(X(p.x))}" cy="${f1(Y(p.y))}" r="3.5"/>`;
         }
       });
       // etiqueta del récord vigente
@@ -188,7 +191,7 @@ export function crearGraficoProgresion(host, opts) {
         const mx = X(mejor.x), my = Y(mejor.y);
         const alinea = mx > W * 0.55 ? 'end' : 'start';
         const dx = alinea === 'end' ? -10 : 10;
-        s += `<text class="g-etiqueta" x="${f1(mx + dx)}" y="${f1(my - 12)}" text-anchor="${alinea}">${mejor.rp ? 'RP ' : ''}${esc(mejor.t)}</text>`;
+        s += `<text class="g-etiqueta" x="${f1(mx + dx)}" y="${f1(my + 22)}" text-anchor="${alinea}">${mejor.rp ? 'RP ' : ''}${esc(mejor.t)}</text>`;
       }
       s += `</g>`;
     }
@@ -201,7 +204,7 @@ export function crearGraficoProgresion(host, opts) {
     // leyenda (2 series)
     leyenda.innerHTML = (o.series.length > 1
       ? o.series.map((se) => `<span class="g-ley g-ley-${se.clase || 'a'}"><i></i>${esc(se.etiqueta)}</span>`).join('')
-      : '') + '<span class="g-ley"><i class="g-ley-paso"></i>Mejor marca vigente</span><span class="g-ley"><i class="g-ley-rp"></i>Récord personal</span>';
+      : '') + '<span class="g-ley"><i class="g-ley-baja"></i>Bajó el tiempo</span><span class="g-ley"><i class="g-ley-sube"></i>Subió</span><span class="g-ley"><i class="g-ley-paso"></i>Mejor marca vigente</span><span class="g-ley"><i class="g-ley-rp"></i>Récord personal</span>';
 
     if (anim && !reducir()) {
       svg.querySelectorAll('.g-linea').forEach((p) => {
@@ -240,7 +243,7 @@ export function crearGraficoProgresion(host, opts) {
 
   function mostrarTip(p) {
     const x = geo.X(p.x), y = geo.Y(p.y);
-    tip.innerHTML = `<b class="num">${esc(p.t)}</b>${p.rp ? ' <span class="tip-rp">RP</span>' : ''}<span>${esc(textoLectura(p))}</span><span>${esc(metaLectura(p))}</span>`;
+    tip.innerHTML = `<b class="num">${esc(p.t)}</b>${p.rp ? ' <span class="tip-rp">RP</span>' : ''}${p.delta != null ? `<span>${variacionTiempo(p.delta, { largo: true })}</span>` : ''}<span>${esc(textoLectura(p))}</span><span>${esc(metaLectura(p))}</span>`;
     tip.hidden = false;
     const tw = tip.offsetWidth;
     let left = x - tw / 2;
@@ -317,7 +320,7 @@ export function crearGraficoProgresion(host, opts) {
 /* Sparkline                                                           */
 /* ------------------------------------------------------------------ */
 /**
- * valores: segundos (eje invertido: menor = más arriba). opts: { ancho=96, alto=28, fluido=false, clase='' }
+ * valores en su unidad (eje natural: mayor = más arriba; con tiempos, mejorar es descender). opts: { ancho=96, alto=28, fluido=false, clase='' }
  * fluido => ocupa el 100 % del ancho del contenedor (preserveAspectRatio none, trazos sin escala).
  */
 export function sparkline(valores, { ancho = 96, alto = 28, fluido = false, clase = '', etiqueta = '' } = {}) {
@@ -327,7 +330,7 @@ export function sparkline(valores, { ancho = 96, alto = 28, fluido = false, clas
   if (!v.length) return `<svg ${attrs}></svg>`;
   const mn = Math.min(...v), mx = Math.max(...v);
   const rango = mx - mn || 1;
-  const pts = v.map((n, i) => [v.length === 1 ? ancho / 2 : pad + (i / (v.length - 1)) * (ancho - pad * 2), v.length === 1 ? alto / 2 : pad + ((n - mn) / rango) * (alto - pad * 2)]);
+  const pts = v.map((n, i) => [v.length === 1 ? ancho / 2 : pad + (i / (v.length - 1)) * (ancho - pad * 2), v.length === 1 ? alto / 2 : pad + ((mx - n) / rango) * (alto - pad * 2)]);
   const d = pts.map((p, i) => `${i ? 'L' : 'M'}${f1(p[0])} ${f1(p[1])}`).join('');
   const ult = pts[pts.length - 1];
   const dot = `<path class="spark-dot" d="M${f1(ult[0])} ${f1(ult[1])}h0.01" vector-effect="non-scaling-stroke"/>`;
@@ -396,9 +399,9 @@ export function radar(ejes, { max = 10, tam = 340 } = {}) {
 /* ------------------------------------------------------------------ */
 /* Sparkline ascendente (más = mejor: fuerza, saltos, repeticiones)    */
 /* ------------------------------------------------------------------ */
-/** Igual que sparkline() pero con el eje sin invertir: el valor mayor queda arriba. */
+/** Igual que sparkline(): el valor mayor queda arriba. Nombre explícito para métricas donde más es mejor. */
 export function sparklineMas(valores, opts = {}) {
-  return sparkline(valores.filter((n) => n != null).map((n) => -n), opts);
+  return sparkline(valores, opts);
 }
 
 /* ------------------------------------------------------------------ */

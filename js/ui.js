@@ -1,6 +1,6 @@
 // Utilidades de interfaz reutilizables: elementos, chips, pestañas, estados vacíos/error/carga.
 import { icono, rombo } from './iconos.js';
-import { esc, fmtTiempo } from './formato.js';
+import { esc, fmtTiempo, variacionTiempo } from './formato.js';
 
 export const reducirMovimiento = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -15,15 +15,8 @@ export function chipRP(corto = false) {
   return `<span class="chip-rp" ${corto ? 'title="Récord personal" aria-label="Récord personal"' : ''}>${rombo(8)}${corto ? 'RP' : 'RÉCORD PERSONAL'}</span>`;
 }
 
-/** Variación respecto a una marca anterior. delta > 0 = más rápido. */
-export function variacion(delta, { largo = false } = {}) {
-  if (delta == null) return '';
-  if (Math.abs(delta) < 0.005) return `<span class="var var-igual">= igual</span>`;
-  const d = Math.abs(delta);
-  const txt = d >= 60 ? fmtTiempo(d) : d.toFixed(2);
-  if (delta > 0) return `<span class="var var-ok">▲ ${txt}${largo ? ' s más rápido' : ''}</span>`;
-  return `<span class="var var-mal">▼ ${txt}${largo ? ' s más lento' : ''}</span>`;
-}
+/** Variación de un tiempo de nado (delta > 0 = el tiempo bajó = mejora). Ver variacionTiempo() en formato.js. */
+export const variacion = variacionTiempo;
 
 /** Cuenta de 0 al valor (solo la primera vez por sesión y clave). El texto final ya está en el HTML. */
 export function animarTiempo(nodo, segundos, clave) {
