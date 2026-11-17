@@ -178,18 +178,7 @@ export function render(cont, p) {
       </li>`;
   };
 
-  /* ---- Tabla ---- */
-  const celdaSes = (d) => {
-    if (!d || d.asis == null) return '<td class="num as-nd">–</td>';
-    return `<td class="num">${d.asis}${d.exig != null && !d.mixto ? `<span class="as-de"> / ${d.exig}</span>` : ''}</td>`;
-  };
-  const celdaPct = (d) => (d && d.pct != null ? `<td class="num">${pct(d.pct)}${d.mixto ? '<sup class="as-dag">†</sup>' : ''}</td>` : '<td class="num as-nd">–</td>');
-  const celdaNota = (d) => (d && d.nota != null ? `<td class="num">${nota1(d.nota)}</td>` : '<td class="num as-nd">–</td>');
   const hayMixto = meses.some((mes) => TIPOS.some((t) => M.get(mes)[t.id]?.mixto));
-  const filasTabla = [...meses].reverse().map((mes, i) => {
-    const m = M.get(mes);
-    return `<tr${i === 0 ? ' class="as-ultima"' : ''}><th scope="row">${esc(mesLargo(mes))}</th>${celdaSes(m.agua)}${celdaPct(m.agua)}${celdaSes(m.fisico)}${celdaPct(m.fisico)}${celdaNota(m.agua)}${celdaNota(m.fisico)}</tr>`;
-  }).join('');
   const hayAnterior = filas.some((r) => r.sis === 'anterior');
 
   cont.innerHTML = `
@@ -219,22 +208,6 @@ export function render(cont, p) {
         </section>
       </div>
 
-      <section aria-labelledby="as-tab-h" class="as-tabla">
-        <h2 class="h3" id="as-tab-h">Detalle mensual</h2>
-        <div class="tabla-wrap" tabindex="0" role="region" aria-labelledby="as-tab-h">
-          <table class="tabla as-tabla-t">
-            <thead><tr>
-              <th scope="col">Mes</th>
-              <th scope="col" class="num">Agua</th><th scope="col" class="num">Agua %</th>
-              <th scope="col" class="num">Físico</th><th scope="col" class="num">Físico %</th>
-              <th scope="col" class="num">Nota agua</th><th scope="col" class="num">Nota físico</th>
-            </tr></thead>
-            <tbody>${filasTabla}</tbody>
-          </table>
-        </div>
-        <p class="as-pie">Sesiones asistidas${meses.some((mes) => TIPOS.some((t) => M.get(mes)[t.id]?.exig != null)) ? ' y, cuando existe, el total de exigidas' : ''}. Las notas van de 0 a 10.${hayMixto ? ' † Septiembre: el porcentaje cuenta solo las sesiones desde el 7.' : ''}</p>
-      </section>
-
       <aside class="as-sistema" aria-labelledby="as-sis-h">
         <h2 class="label" id="as-sis-h">Sobre el cambio de sistema</h2>
         <p>Hasta el 6 de septiembre de 2026 solo se registraban las sesiones de agua a las que asistías y tus notas. Desde el 7 de septiembre también se registran las sesiones exigidas y el porcentaje de cumplimiento, en agua y en físico${hayAnterior || hayMixto ? '; por eso septiembre reúne los dos sistemas' : ''}.</p>
@@ -245,7 +218,7 @@ export function render(cont, p) {
   const $ = (s) => cont.querySelector(s);
   const resumenSes = categorias.filter((c) => c.valores.agua != null).map((c) => `${mesLargo(c.mes)}: ${c.valores.agua}`).join('; ');
   graficos.push(crearGraficoColumnas($('#as-g-ses'), {
-    ariaLabel: `Sesiones asistidas por mes en agua y físico. Agua: ${resumenSes}. El detalle mensual está en la tabla`,
+    ariaLabel: `Sesiones asistidas por mes en agua y físico. Agua: ${resumenSes}.`,
     series: TIPOS.map((t) => ({ id: t.id, etiqueta: t.nombre, clase: t.clase })),
     categorias,
     marcaEtiqueta: 'Sesiones exigidas',
@@ -256,7 +229,7 @@ export function render(cont, p) {
   const hayNotas = TIPOS.some((t) => puntosNota(t.id).length);
   if (hayNotas) {
     graficos.push(crearGraficoLineas($('#as-g-not'), {
-      ariaLabel: `Nota promedio mensual de 0 a 10, agua y físico. Promedio del año: ${nAnio != null ? nota1(nAnio) : 'sin notas'}. El detalle está en la tabla mensual`,
+      ariaLabel: `Nota promedio mensual de 0 a 10, agua y físico. Promedio del año: ${nAnio != null ? nota1(nAnio) : 'sin notas'}.`,
       modo: 'categoria',
       etiquetasX: meses.map(etMes),
       series: TIPOS.map((t) => ({ id: t.id, etiqueta: t.nombre, clase: t.clase, puntos: puntosNota(t.id) })).filter((s) => s.puntos.length),

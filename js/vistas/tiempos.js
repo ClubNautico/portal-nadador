@@ -1,11 +1,11 @@
-// Tiempos: Progresión, Mejores marcas y Línea de tiempo.
+// Tiempos: Mejores marcas (cada prueba se despliega con su progresión) y Línea de tiempo.
 import { icono } from '../iconos.js';
-import { el, chipRP, variacion, animarTiempo, vacio, grupoRadio, pestanas, guardado, reducirMovimiento } from '../ui.js';
+import { el, chipRP, notaRP, variacion, animarTiempo, vacio, grupoRadio, pestanas, guardado, reducirMovimiento } from '../ui.js';
 import { crearGraficoProgresion } from '../graficos.js';
 import { esc, fechaCorta, fechaMes, ordinal, tituloEvento, fmtTiempo, rangoFechas, plural, parseISO, MESES } from '../formato.js';
 import { ESTILOS, estadisticas, msDe } from '../datos.js';
 
-const CLAVE = 'portal.tiempos.prueba';
+const CLAVE = 'portal.tiempos.prueba'; // solo lectura: enlaces antiguos de Progresión
 let limpiezas = [];
 
 export function destroy() {
@@ -20,7 +20,7 @@ export function render(cont, p, ctx) {
     <div class="tiempos">
       <h1 class="vista-h1">Tiempos</h1>
       <div class="tabs-wrap"><div id="tt-tabs"></div></div>
-      <div id="tt-panel" role="tabpanel" aria-labelledby="tab-progresion"></div>
+      <div id="tt-panel" role="tabpanel" aria-labelledby="tab-mejores"></div>
     </div>`;
   const panel = cont.querySelector('#tt-panel');
   if (!t.length) {
@@ -38,29 +38,40 @@ export function render(cont, p, ctx) {
   }
   const total = (k) => Object.values(dispon.get(k) || {}).reduce((a, b) => a + b, 0);
   const masNadada = [...dispon.keys()].sort((a, b) => total(b) - total(a))[0];
-  const guardada = guardado.leer(CLAVE);
-  const estado = { est: null, dist: null, pool: null, tab: ctx.params.tab || 'progresion', poolMejores: null };
-  const inicial = guardada && dispon.has(`${guardada.est}|${guardada.dist}`) ? `${guardada.est}|${guardada.dist}` : masNadada;
-  [estado.est, estado.dist] = [inicial.split('|')[0], Number(inicial.split('|')[1])];
-  estado.pool = guardada && guardada.pool && dispon.get(inicial)[guardada.pool] ? guardada.pool : poolPorDefecto(inicial);
-
-  function poolPorDefecto(k) {
+  const poolPorDefecto = (k) => {
     const d = dispon.get(k) || {};
     return (d['25'] || 0) >= (d['50'] || 0) ? '25' : '50';
+  };
+
+  /**
+   * Prueba que debe abrirse al entrar. Convención de enlace: ?p=<estilo>-<distancia>-<piscina>
+   * (piscina 25, 50 o "ambas"; si se omite o no existe, se elige la que más marcas tiene).
+   * Enlaces antiguos ?tab=progresion sin p: se abre la última prueba mirada o la más nadada.
+   */
+  function leerPrueba(txt) {
+    const [est, dist, pool] = String(txt || '').split('-');
+    const k = `${est}|${Number(dist)}`;
+    if (!ESTILOS.includes(est) || !dispon.has(k)) return null;
+    const d = dispon.get(k);
+    return { est, dist: Number(dist), pool: (pool === 'ambas' && d['25'] && d['50']) || ((pool === '25' || pool === '50') && d[pool]) ? pool : poolPorDefecto(k) };
   }
-  const persistir = () => guardado.poner(CLAVE, { est: estado.est, dist: estado.dist, pool: estado.pool });
+  let pendiente = leerPrueba(ctx.params.p);
+  if (!pendiente && ctx.params.tab === 'progresion') {
+    const g = guardado.leer(CLAVE);
+    pendiente = (g && leerPrueba(`${g.est}-${g.dist}-${g.pool}`)) || leerPrueba(`${masNadada.split('|')[0]}-${masNadada.split('|')[1]}`);
+  }
+  const estado = { tab: ctx.params.tab === 'linea' ? 'linea' : 'mejores', poolMejores: null };
 
   // ---- pestañas
   let vistaActiva = null;
   const tabs = pestanas(cont.querySelector('#tt-tabs'), {
-    items: [{ valor: 'progresion', etiqueta: 'Progresión' }, { valor: 'mejores', etiqueta: 'Mejores marcas' }, { valor: 'linea', etiqueta: 'Línea de tiempo' }],
-    valor: ['progresion', 'mejores', 'linea'].includes(estado.tab) ? estado.tab : 'progresion',
+    items: [{ valor: 'mejores', etiqueta: 'Mejores marcas' }, { valor: 'linea', etiqueta: 'Línea de tiempo' }],
+    valor: estado.tab,
     aria: 'Secciones de tiempos',
     idPanel: 'tt-panel',
-    onChange: (v) => { estado.tab = v; ctx.setParams({ tab: v === 'progresion' ? null : v }); montarTab(); },
+    onChange: (v) => { estado.tab = v; ctx.setParams({ tab: v === 'mejores' ? null : v, p: null }); montarTab(); },
   });
   limpiezas.push(() => tabs.destroy());
-  if (!['progresion', 'mejores', 'linea'].includes(estado.tab)) estado.tab = 'progresion';
 
   function montarTab() {
     if (vistaActiva?.destroy) vistaActiva.destroy();
@@ -68,24 +79,17 @@ export function render(cont, p, ctx) {
     panel.replaceChildren();
     const caja = el('<div class="tab-cuerpo"></div>');
     panel.append(caja);
-    if (estado.tab === 'progresion') vistaActiva = progresion(caja);
-    else if (estado.tab === 'mejores') vistaActiva = mejores(caja);
-    else vistaActiva = linea(caja);
+    vistaActiva = estado.tab === 'mejores' ? mejores(caja) : linea(caja);
   }
   limpiezas.push(() => vistaActiva?.destroy?.());
 
   /* ================================================================ */
-  /* PROGRESIÓN                                                       */
+  /* PROGRESIÓN DE UNA PRUEBA (contenido del despliegue)              */
   /* ================================================================ */
-  function progresion(caja) {
+  function progresion(caja, { est, dist, pool: poolIni }) {
+    const key = `${est}|${dist}`;
     caja.innerHTML = `
-      <div class="selector">
-        <div class="selector-fila" id="sel-estilo"></div>
-        <div class="selector-fila selector-2">
-          <div class="chips-dist" id="sel-dist"></div>
-          <div class="seg-wrap"><div id="sel-pool"></div></div>
-        </div>
-      </div>
+      <div class="seg-wrap det-pool"><div id="sel-pool"></div></div>
       <section class="card card-grafico" aria-label="Gráfico de progresión">
         <div class="graf-titulo"><h2 class="h3" id="g-titulo"></h2></div>
         <div id="g-host"></div>
@@ -96,43 +100,19 @@ export function render(cont, p, ctx) {
         <div id="p-lista"></div>
       </section>`;
     const $ = (s) => caja.querySelector(s);
+    let pool = poolIni;
 
-    const items = (arr) => arr;
-    const estilosItems = () => ESTILOS.map((e) => ({ valor: e, etiqueta: e, deshabilitado: ![...dispon.keys()].some((k) => k.startsWith(e + '|')) }));
-    const distItems = () => {
-      const todas = [...new Set([...dispon.keys()].map((k) => Number(k.split('|')[1])))].sort((a, b) => a - b);
-      return todas.map((d) => ({ valor: String(d), etiqueta: String(d), deshabilitado: !dispon.has(`${estado.est}|${d}`) }));
-    };
     const poolItems = () => {
-      const d = dispon.get(`${estado.est}|${estado.dist}`) || {};
+      const d = dispon.get(key) || {};
       return [
         { valor: '25', etiqueta: '25 m', deshabilitado: !d['25'] },
         { valor: '50', etiqueta: '50 m', deshabilitado: !d['50'] },
         { valor: 'ambas', etiqueta: 'Ambas', deshabilitado: !(d['25'] && d['50']) },
       ];
     };
-
-    const gEstilo = grupoRadio($('#sel-estilo'), {
-      items: estilosItems(), valor: estado.est, aria: 'Estilo', onChange: (v) => {
-        estado.est = v;
-        if (!dispon.has(`${v}|${estado.dist}`)) {
-          const ds = [...dispon.keys()].filter((k) => k.startsWith(v + '|')).sort((a, b) => total(b) - total(a));
-          estado.dist = Number(ds[0].split('|')[1]);
-        }
-        ajustarPool(); actualizar(true);
-      },
-    });
-    const gDist = grupoRadio($('#sel-dist'), {
-      items: distItems(), valor: String(estado.dist), aria: 'Distancia en metros', onChange: (v) => { estado.dist = Number(v); ajustarPool(); actualizar(true); },
-    });
     const gPool = grupoRadio($('#sel-pool'), {
-      items: poolItems(), valor: estado.pool, aria: 'Piscina', variante: 'seg', onChange: (v) => { estado.pool = v; actualizar(true); },
+      items: poolItems(), valor: pool, aria: 'Piscina', variante: 'seg', onChange: (v) => { pool = v; actualizar(true); },
     });
-    function ajustarPool() {
-      const d = dispon.get(`${estado.est}|${estado.dist}`) || {};
-      if (estado.pool === 'ambas' && !(d['25'] && d['50'])) estado.pool = poolPorDefecto(`${estado.est}|${estado.dist}`);
-      else if (estado.pool !== 'ambas' && !d[estado.pool]) estado.pool = poolPorDefecto(`${estado.est}|${estado.dist}`);
-    }
 
     let grafico = null;
     let primera = true;
@@ -140,10 +120,9 @@ export function render(cont, p, ctx) {
     let marcasLista = [];
 
     function seriesActuales() {
-      const pools = estado.pool === 'ambas' ? ['25', '50'] : [estado.pool];
+      const pools = pool === 'ambas' ? ['25', '50'] : [pool];
       return pools.map((c, i) => {
-        const pr = p._pruebas.get(`${estado.est}|${estado.dist}|${c}`);
-        const mejorId = pr ? `${c}-${pr.marcas.indexOf(pr.mejor)}` : null;
+        const pr = p._pruebas.get(`${est}|${dist}|${c}`);
         return {
           pr, c,
           serie: {
@@ -155,19 +134,15 @@ export function render(cont, p, ctx) {
     }
 
     function actualizar(anim) {
-      persistir();
-      gEstilo.setItems(estilosItems(), estado.est);
-      gDist.setItems(distItems(), String(estado.dist));
-      gPool.setItems(poolItems(), estado.pool);
       const ss = seriesActuales();
-      const nombre = `${estado.dist} m ${estado.est.toLowerCase()}`;
-      $('#g-titulo').textContent = `${nombre.charAt(0).toUpperCase()}${nombre.slice(1)} · ${estado.pool === 'ambas' ? 'piscinas de 25 y 50 m' : `piscina de ${estado.pool} m`}`;
+      const nombre = `${dist} m ${est.toLowerCase()}`;
+      $('#g-titulo').textContent = `${nombre.charAt(0).toUpperCase()}${nombre.slice(1)} · ${pool === 'ambas' ? 'piscinas de 25 y 50 m' : `piscina de ${pool} m`}`;
       const pts = ss.flatMap((s) => s.serie.puntos);
       const desc = pts.length
         ? `Progresión de ${nombre} (bajar el tiempo es mejorar): de ${pts[0].t} en ${fechaMes(new Date(pts[0].x).toISOString().slice(0, 10))} a ${pts[pts.length - 1].t} en ${fechaMes(new Date(pts[pts.length - 1].x).toISOString().slice(0, 10))}. La lista de marcas debajo contiene los mismos datos`
         : `Progresión de ${nombre}`;
       const opts = { ariaLabel: desc, series: ss.map((s) => s.serie), activo: undefined, onActivo: (pt) => marcarFila(pt.id) };
-      if (!grafico) grafico = crearGraficoProgresion($('#g-host'), { ...opts, activo: undefined });
+      if (!grafico) grafico = crearGraficoProgresion($('#g-host'), opts);
       else grafico.update(opts, { anim: !primera || anim });
       primera = false;
       pintarStats(ss);
@@ -210,7 +185,7 @@ export function render(cont, p, ctx) {
     function dibujarFilas() {
       const host = $('#p-lista');
       const mostrar = marcasLista.slice(0, limite);
-      const doble = estado.pool === 'ambas';
+      const doble = pool === 'ambas';
       host.innerHTML = `<ul class="lista-t">${mostrar.map((m) => `
         <li><button type="button" class="fila-t" data-id="${esc(m._id)}">
           <span class="ft-main">
@@ -219,7 +194,8 @@ export function render(cont, p, ctx) {
           </span>
           <span class="ft-der"><span class="ft-t num ${m.esRP ? 'acento' : ''}">${esc(m.t)}</span>${m.mejorAntes == null ? '<span class="var var-igual">primera</span>' : variacion(m.delta)}</span>
         </button></li>`).join('')}</ul>
-        ${marcasLista.length > limite ? `<button type="button" class="btn btn-sec ver-mas">Ver más (${marcasLista.length - limite})</button>` : ''}`;
+        ${marcasLista.length > limite ? `<button type="button" class="btn btn-sec ver-mas">Ver más (${marcasLista.length - limite})</button>` : ''}
+        ${marcasLista.some((m) => m.esRP) ? notaRP() : ''}`;
       host.querySelector('.ver-mas')?.addEventListener('click', () => { limite += 25; dibujarFilas(); });
       const act = grafico?.activo();
       if (act) marcarFila(act.id);
@@ -243,7 +219,7 @@ export function render(cont, p, ctx) {
   }
 
   /* ================================================================ */
-  /* MEJORES MARCAS                                                   */
+  /* MEJORES MARCAS (acordeón: cada prueba despliega su progresión)   */
   /* ================================================================ */
   function mejores(caja) {
     const n25 = (p.mejores?.['25'] || []).length, n50 = (p.mejores?.['50'] || []).length;
@@ -251,11 +227,59 @@ export function render(cont, p, ctx) {
       caja.append(vacio({ titulo: 'Aún no hay mejores marcas', texto: 'Se calculan a partir de tus competencias oficiales.' }));
       return {};
     }
+    const tiene = (pool, pr) => (p.mejores?.[pool] || []).some((m) => m.est === pr.est && Number(m.dist) === pr.dist);
+    // Si hay una prueba por abrir, la lista arranca en la piscina de esa prueba
+    if (pendiente) {
+      const poolsPr = pendiente.pool === 'ambas' ? [poolPorDefecto(`${pendiente.est}|${pendiente.dist}`), '25', '50'] : [pendiente.pool, '25', '50'];
+      const ok = poolsPr.find((c) => tiene(c, pendiente));
+      if (ok) estado.poolMejores = ok; else pendiente = null;
+    }
     if (!estado.poolMejores) estado.poolMejores = n25 >= n50 ? '25' : '50';
     caja.innerHTML = `
       <div class="mej-cab"><p class="mej-txt">Tu mejor tiempo en cada prueba. Toca una para ver su progresión.</p><div id="mej-pool"></div></div>
       <div id="mej-cuerpo"></div>`;
+
+    let abierta = null; // { btn, panel, inst }
+    const claveBtn = (b) => `${b.dataset.est}-${b.dataset.dist}`;
+
+    function cerrar() {
+      if (!abierta) return;
+      abierta.inst?.destroy();
+      abierta.panel.remove();
+      abierta.btn.setAttribute('aria-expanded', 'false');
+      abierta.btn.removeAttribute('aria-controls');
+      abierta = null;
+    }
+    /** Coloca el despliegue al final de la fila de tarjetas de la que forma parte la tocada. */
+    function colocar(btn, nodo) {
+      const rej = btn.closest('.mej-rejilla');
+      const cols = Math.max(1, getComputedStyle(rej).gridTemplateColumns.split(' ').length);
+      const tarjetas = [...rej.querySelectorAll('.mej-card')];
+      const i = tarjetas.indexOf(btn);
+      const fin = tarjetas[Math.min(tarjetas.length - 1, (Math.floor(i / cols) + 1) * cols - 1)];
+      if (fin.nextElementSibling !== nodo) fin.after(nodo);
+    }
+    function abrir(btn, pool, desplazar) {
+      cerrar();
+      const est = btn.dataset.est, dist = Number(btn.dataset.dist);
+      const nodo = el(`<section class="mej-detalle" id="mej-det" role="region" aria-labelledby="${esc(btn.id)}"><div class="mej-det-cuerpo tab-cuerpo"></div></section>`);
+      colocar(btn, nodo);
+      btn.setAttribute('aria-expanded', 'true');
+      btn.setAttribute('aria-controls', 'mej-det');
+      const inst = progresion(nodo.querySelector('.mej-det-cuerpo'), { est, dist, pool });
+      abierta = { btn, panel: nodo, inst };
+      ctx.setParams({ tab: null, p: `${est}-${dist}-${pool}` });
+      if (desplazar) {
+        requestAnimationFrame(() => {
+          const rb = btn.getBoundingClientRect(), rn = nodo.getBoundingClientRect();
+          // solo mueve la página si el inicio del despliegue no se ve bien
+          if (rn.top > innerHeight * 0.6 || rb.top < 0) btn.scrollIntoView({ block: 'start', behavior: reducirMovimiento() ? 'auto' : 'smooth' });
+        });
+      }
+    }
+
     const pintar = () => {
+      cerrar();
       const lista = (p.mejores?.[estado.poolMejores] || []).slice();
       const cuerpo = caja.querySelector('#mej-cuerpo');
       if (!lista.length) {
@@ -266,31 +290,38 @@ export function render(cont, p, ctx) {
         const g = lista.filter((m) => m.est === est).sort((a, b) => a.dist - b.dist);
         if (!g.length) return '';
         return `<section class="mej-grupo" aria-label="${esc(est)}"><h2 class="h3 mej-est">${esc(est)}</h2><div class="mej-rejilla">${g.map((m) => `
-          <button type="button" class="mej-card" data-est="${esc(m.est)}" data-dist="${esc(m.dist)}">
+          <button type="button" class="mej-card" id="mej-${esc(m.est)}-${esc(m.dist)}" data-est="${esc(m.est)}" data-dist="${esc(m.dist)}" aria-expanded="false" aria-label="${esc(`${m.dist} metros ${m.est}, ${m.t}. Ver progresión`)}">
             <span class="label">${esc(m.dist)}<span class="u-m">m</span></span>
             <span class="mej-t num">${esc(m.t)}</span>
             <span class="mej-f">${esc(fechaCorta(m.f))}${m.ed ? ` · ${esc(m.ed)} años` : ''}</span>
             <span class="mej-ev">${esc(tituloEvento(m.ev))}</span>
+            ${icono('chev-abajo', 18, 'mej-chev')}
           </button>`).join('')}</div></section>`;
       }).join('');
     };
     const gp = grupoRadio(caja.querySelector('#mej-pool'), {
       items: [{ valor: '25', etiqueta: '25 m', deshabilitado: !n25 }, { valor: '50', etiqueta: '50 m', deshabilitado: !n50 }],
-      valor: estado.poolMejores, aria: 'Piscina', variante: 'seg', onChange: (v) => { estado.poolMejores = v; pintar(); },
+      valor: estado.poolMejores, aria: 'Piscina', variante: 'seg', onChange: (v) => { estado.poolMejores = v; ctx.setParams({ p: null }); pintar(); },
     });
     pintar();
+
     caja.addEventListener('click', (e) => {
       const b = e.target.closest('.mej-card');
       if (!b) return;
-      estado.est = b.dataset.est; estado.dist = Number(b.dataset.dist); estado.pool = estado.poolMejores;
-      persistir();
-      estado.tab = 'progresion';
-      tabs.set('progresion');
-      ctx.setParams({ tab: null });
-      montarTab();
-      window.scrollTo({ top: 0 });
+      if (abierta?.btn === b) { cerrar(); ctx.setParams({ p: null }); return; }
+      abrir(b, estado.poolMejores, true);
     });
-    return {};
+
+    // Al cambiar el ancho cambian las tarjetas por fila: recoloca el despliegue
+    const alRedimensionar = () => { if (abierta) colocar(abierta.btn, abierta.panel); };
+    addEventListener('resize', alRedimensionar);
+
+    if (pendiente) {
+      const btn = caja.querySelector(`.mej-card[data-est="${CSS.escape(pendiente.est)}"][data-dist="${pendiente.dist}"]`);
+      if (btn) abrir(btn, pendiente.pool === 'ambas' ? 'ambas' : pendiente.pool, true);
+      pendiente = null;
+    }
+    return { destroy() { removeEventListener('resize', alRedimensionar); cerrar(); } };
   }
 
   /* ================================================================ */
@@ -307,6 +338,7 @@ export function render(cont, p, ctx) {
       <header class="tl-resumen">
         <p class="tl-frase"><b class="num">${t.length}</b> ${plural(t.length, 'marca', 'marcas')} en <b class="num">${comps.length}</b> ${plural(comps.length, 'competencia', 'competencias')} desde el ${esc(fechaCorta(primeraM.f))}</p>
         <p class="tl-sub">Tu primera marca fue ${esc(primeraM.p.toLowerCase())} · ${esc(primeraM.t)}. La más reciente, el ${esc(fechaCorta(ultimaM.f))}.</p>
+        ${t.some((m) => m.esRP) ? notaRP() : ''}
       </header>
       <div class="tl-filtros">
         <div class="selector-fila" id="tl-est"></div>

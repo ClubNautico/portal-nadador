@@ -1,6 +1,6 @@
 // Inicio: resumen del nadador.
 import { icono } from '../iconos.js';
-import { el, chipRP, variacion, animarTiempo, vacio, guardado } from '../ui.js';
+import { el, chipRP, notaRP, variacion, animarTiempo, vacio } from '../ui.js';
 import { avatar } from '../ui.js';
 import { sparkline } from '../graficos.js';
 import { esc, iniciales, fechaCorta, fechaMes, mesLargo, ordinal, nombreLimpio, plural, tituloEvento, fmtTiempo, fmtDelta, nombreCorto } from '../formato.js';
@@ -46,6 +46,8 @@ export function render(cont, p, ctx) {
   const desde = t.length ? t[0].f.slice(0, 4) : '–';
   const principal = pruebaMasNadada(p);
   const rps = ultimosRP(p, 5);
+  /** Enlace a Tiempos con la prueba desplegada (convención: ?p=<estilo>-<distancia>-<piscina>). */
+  const hrefPrueba = (est, dist, c) => `${ctx.hrefVista('tiempos')}?p=${encodeURIComponent(`${est}-${dist}-${c}`)}`;
   const ult = comps[comps.length - 1];
 
   const cab = `
@@ -86,10 +88,11 @@ export function render(cont, p, ctx) {
 
   const listaRP = rps.length
     ? `<ul class="lista-filas">${rps.map((m) => `
-        <li class="fila-rp">
-          <div class="fr-main"><p class="fr-t">${esc(m.dist)} m ${esc(m.est)} · ${m.c} m</p><p class="fr-s">${esc(fechaCorta(m.f))} · ${esc(tituloEvento(m.ev))}</p></div>
+        <li><a class="fila-rp fila-link" href="${esc(hrefPrueba(m.est, m.dist, m.c))}">
+          <div class="fr-main"><p class="fr-t">${esc(m.dist)} m ${esc(m.est)} · ${esc(m.c)} m</p><p class="fr-s">${esc(fechaCorta(m.f))} · ${esc(tituloEvento(m.ev))}</p></div>
           <div class="fr-der"><span class="fr-tiempo num acento">${esc(m.t)}</span>${variacion(m.delta)}</div>
-        </li>`).join('')}</ul>`
+          ${icono('chev-der', 18, 'fr-ir')}
+        </a></li>`).join('')}</ul>`
     : '';
 
   let ultimaHTML = '';
@@ -105,6 +108,7 @@ export function render(cont, p, ctx) {
             <div class="fr-main"><p class="fr-t">${esc(m.p)}</p><p class="fr-s">${m.pu ? `${ordinal(m.pu)} lugar` : 'Sin puesto'}${m.exh ? ' · exhibición' : ''}</p></div>
             <div class="fr-der">${m.esRP ? chipRP(true) : m.primera ? '<span class="tag">Primera vez</span>' : ''}<span class="col-tv"><span class="fr-tiempo num ${m.esRP ? 'acento' : ''}">${esc(m.t)}</span>${m.esRP && m.delta > 0 ? variacion(m.delta) : ''}</span></div>
           </li>`).join('')}</ul>
+        ${orden.some((m) => m.esRP) ? notaRP() : ''}
       </section>`;
   }
 
@@ -142,7 +146,6 @@ export function render(cont, p, ctx) {
   const hero = cont.querySelector('.hero-tiempo');
   if (hero) animarTiempo(hero, Number(hero.dataset.s), 'inicio-hero');
   cont.querySelector('[data-ver]')?.addEventListener('click', () => {
-    guardado.poner('portal.tiempos.prueba', { est: principal.est, dist: principal.dist, pool: principal.c });
-    ctx.navegar(ctx.hrefVista('tiempos'));
+    ctx.navegar(hrefPrueba(principal.est, principal.dist, principal.c));
   });
 }

@@ -20,11 +20,11 @@ export const VISTAS = {
   asistencia: { titulo: 'Asistencia', icono: 'asistencia', cargar: () => import('./vistas/asistencia.js') },
 };
 /** Orden de la barra inferior (móvil). */
-export const NAV_INFERIOR = ['inicio', 'tiempos', 'agua', 'fuerza', 'mas'];
+export const NAV_INFERIOR = ['inicio', 'tiempos', 'agua', 'cuerpo', 'mas'];
 /** Destinos agrupados bajo "Más". */
-export const NAV_MAS = ['cuerpo', 'tecnica', 'asistencia'];
+export const NAV_MAS = ['fuerza', 'tecnica', 'asistencia'];
 /** Barra lateral (escritorio): todo en una lista. */
-const NAV_LATERAL = ['inicio', 'tiempos', 'agua', 'fuerza', 'cuerpo', 'tecnica', 'asistencia'];
+const NAV_LATERAL = ['inicio', 'tiempos', 'agua', 'cuerpo', 'fuerza', 'tecnica', 'asistencia'];
 
 const raiz = document.getElementById('app');
 let shell = null;           // referencias al DOM del shell

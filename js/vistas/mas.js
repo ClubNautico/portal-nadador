@@ -1,9 +1,9 @@
-// "Más": accesos a Cuerpo, Técnica y Asistencia + tema y cierre de sesión (móvil).
+// "Más": accesos a Fuerza, Técnica y Asistencia + tema y cierre de sesión (móvil).
 import { icono } from '../iconos.js';
 import { esc } from '../formato.js';
 
 const ITEMS = [
-  { v: 'cuerpo', t: 'Cuerpo', d: 'Peso, talla y composición corporal' },
+  { v: 'fuerza', t: 'Fuerza', d: 'Tus tests de fuerza y 1RM' },
   { v: 'tecnica', t: 'Técnica', d: 'Evaluaciones y puntos a mejorar' },
   { v: 'asistencia', t: 'Asistencia', d: 'Tu asistencia mes a mes' },
 ];

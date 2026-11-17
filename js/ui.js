@@ -12,7 +12,12 @@ export function el(html) {
 }
 
 export function chipRP(corto = false) {
-  return `<span class="chip-rp" ${corto ? 'title="Récord personal" aria-label="Récord personal"' : ''}>${rombo(8)}${corto ? 'RP' : 'RÉCORD PERSONAL'}</span>`;
+  return `<span class="chip-rp" title="Récord personal" ${corto ? 'aria-label="Récord personal"' : ''}>${rombo(8)}${corto ? 'RP' : 'RÉCORD PERSONAL'}</span>`;
+}
+
+/** Nota discreta que explica la insignia RP. Una por tarjeta o sección, al pie. */
+export function notaRP() {
+  return '<p class="nota-rp"><b>RP</b> = récord personal: tu mejor marca en esa prueba y piscina hasta ese día.</p>';
 }
 
 /** Variación de un tiempo de nado (delta > 0 = el tiempo bajó = mejora). Ver variacionTiempo() en formato.js. */
