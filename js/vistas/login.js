@@ -47,7 +47,7 @@ export function mostrarLogin(raiz, { onExito, mensaje = '' }) {
             <label class="check">
               <input type="checkbox" name="recordar">
               <span class="check-caja" aria-hidden="true">${icono('check', 16)}</span>
-              <span>Recordarme en este dispositivo</span>
+              <span>Recordar mi usuario</span>
             </label>
             <button type="submit" class="btn btn-primario btn-login"><span class="btn-txt">Ingresar</span><svg class="spin" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="2" stroke-opacity=".3"/><path d="M8 2a6 6 0 0 1 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
           </form>
@@ -68,6 +68,8 @@ export function mostrarLogin(raiz, { onExito, mensaje = '' }) {
   raiz.replaceChildren(vista);
   const form = vista.querySelector('form');
   const uInput = form.usuario, pInput = form.password, err = vista.querySelector('#lg-error');
+  const guardadoU = Sesion.usuarioRecordado();
+  if (guardadoU) { uInput.value = guardadoU; form.recordar.checked = true; }
   const btn = form.querySelector('.btn-login');
   const txt = btn.querySelector('.btn-txt');
   document.querySelectorAll('[data-accion="tema"]').forEach((b) => {

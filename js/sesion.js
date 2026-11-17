@@ -3,6 +3,14 @@ import * as C from './cripto.js';
 import { prepararPerfil } from './datos.js';
 
 const KEY = 'portal.sesion.v1';
+const KEY_USUARIO = 'portal.usuario.v1';   // solo el nombre de usuario (nunca la clave) para prellenar el login
+
+/** Migración: versiones anteriores guardaban la clave derivada en localStorage. Se borra siempre. */
+try { localStorage.removeItem(KEY); } catch {}
+
+export function usuarioRecordado() {
+  try { return localStorage.getItem(KEY_USUARIO) || ''; } catch { return ''; }
+}
 
 export class ErrorCredenciales extends Error {}
 export class ErrorRed extends Error {}
@@ -50,7 +58,15 @@ async function abrirLlavero(h, claveRaw) {
 function guardar(h, claveRaw, recordar) {
   const v = JSON.stringify({ h, k: C.bytesAb64(claveRaw) });
   try { sessionStorage.removeItem(KEY); localStorage.removeItem(KEY); } catch {}
-  try { (recordar ? localStorage : sessionStorage).setItem(KEY, v); } catch {}
+  // La clave derivada vive solo en sessionStorage (se pierde al cerrar la pestaña/navegador).
+  try { sessionStorage.setItem(KEY, v); } catch {}
+}
+
+function recordarUsuario(usuario, recordar) {
+  try {
+    if (recordar) localStorage.setItem(KEY_USUARIO, String(usuario || '').trim());
+    else localStorage.removeItem(KEY_USUARIO);
+  } catch {}
 }
 
 function fijar(llavero, h, recordar) {
@@ -74,13 +90,15 @@ export async function iniciar(usuario, password, recordar) {
     throw new ErrorCredenciales();
   }
   guardar(h, raw, !!recordar);
+  recordarUsuario(usuario, !!recordar);
   return fijar(llavero, h, !!recordar);
 }
 
 export async function restaurar() {
   if (!C.disponible()) return null;
   let guardado = null, recordar = false;
-  for (const [st, rec] of [[sessionStorage, false], [localStorage, true]]) {
+  try { localStorage.removeItem(KEY); } catch {}   // migración: nunca restaurar desde localStorage
+  for (const [st, rec] of [[sessionStorage, false]]) {
     try {
       const v = st.getItem(KEY);
       if (v) { guardado = JSON.parse(v); recordar = rec; break; }

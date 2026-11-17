@@ -178,14 +178,14 @@ export function render(cont, p, ctx) {
       const cont2 = $('#p-stats');
       cont2.innerHTML = ss.map(({ pr, c }) => {
         const st = estadisticas(pr);
-        const etiqueta = `${pr.dist}<span class="u-m">m</span> ${pr.est} · piscina ${c}<span class="u-m">m</span>`;
+        const etiqueta = `${esc(pr.dist)}<span class="u-m">m</span> ${esc(pr.est)} · piscina ${esc(c)}<span class="u-m">m</span>`;
         const soloUna = st.veces === 1;
         const mejora = st.mejoraS > 0.004;
         return `
           <div class="prog-bloque ${ss.length > 1 ? 'prog-doble' : ''}">
             <article class="card hero-card hero-prog">
               <p class="label">Mejor marca · ${etiqueta}</p>
-              <p class="hero-tiempo num" data-s="${st.mejor.s}">${esc(st.mejor.t)}</p>
+              <p class="hero-tiempo num" data-s="${esc(st.mejor.s)}">${esc(st.mejor.t)}</p>
               <div class="hero-linea">${st.mejor.esRP ? chipRP() : ''}${st.mejor.delta > 0 ? variacion(st.mejor.delta, { largo: true, sufijo: ' respecto a tu mejor marca anterior' }) : ''}</div>
               <p class="hero-sub">${esc(fechaCorta(st.mejor.f))} · ${esc(tituloEvento(st.mejor.ev))}</p>
             </article>
@@ -212,10 +212,10 @@ export function render(cont, p, ctx) {
       const mostrar = marcasLista.slice(0, limite);
       const doble = estado.pool === 'ambas';
       host.innerHTML = `<ul class="lista-t">${mostrar.map((m) => `
-        <li><button type="button" class="fila-t" data-id="${m._id}">
+        <li><button type="button" class="fila-t" data-id="${esc(m._id)}">
           <span class="ft-main">
             <span class="ft-ev">${esc(tituloEvento(m.ev))}</span>
-            <span class="ft-sub">${esc(fechaCorta(m.f))}${m.pu ? ` · ${ordinal(m.pu)} lugar` : ''}${m.ed ? ` · ${m.ed} años` : ''}${doble ? ` · ${m._c} m` : ''}${m.exh ? ' · <span class="tag">Exhibición</span>' : ''}${m.esRP ? ` ${chipRP(true)}` : m.primera ? ' <span class="tag">Primera vez</span>' : ''}</span>
+            <span class="ft-sub">${esc(fechaCorta(m.f))}${m.pu ? ` · ${esc(ordinal(m.pu))} lugar` : ''}${m.ed ? ` · ${esc(m.ed)} años` : ''}${doble ? ` · ${esc(m._c)} m` : ''}${m.exh ? ' · <span class="tag">Exhibición</span>' : ''}${m.esRP ? ` ${chipRP(true)}` : m.primera ? ' <span class="tag">Primera vez</span>' : ''}</span>
           </span>
           <span class="ft-der"><span class="ft-t num ${m.esRP ? 'acento' : ''}">${esc(m.t)}</span>${m.mejorAntes == null ? '<span class="var var-igual">primera</span>' : variacion(m.delta)}</span>
         </button></li>`).join('')}</ul>
@@ -265,11 +265,11 @@ export function render(cont, p, ctx) {
       cuerpo.innerHTML = ESTILOS.map((est) => {
         const g = lista.filter((m) => m.est === est).sort((a, b) => a.dist - b.dist);
         if (!g.length) return '';
-        return `<section class="mej-grupo" aria-label="${est}"><h2 class="h3 mej-est">${est}</h2><div class="mej-rejilla">${g.map((m) => `
-          <button type="button" class="mej-card" data-est="${esc(m.est)}" data-dist="${m.dist}">
-            <span class="label">${m.dist}<span class="u-m">m</span></span>
+        return `<section class="mej-grupo" aria-label="${esc(est)}"><h2 class="h3 mej-est">${esc(est)}</h2><div class="mej-rejilla">${g.map((m) => `
+          <button type="button" class="mej-card" data-est="${esc(m.est)}" data-dist="${esc(m.dist)}">
+            <span class="label">${esc(m.dist)}<span class="u-m">m</span></span>
             <span class="mej-t num">${esc(m.t)}</span>
-            <span class="mej-f">${esc(fechaCorta(m.f))}${m.ed ? ` · ${m.ed} años` : ''}</span>
+            <span class="mej-f">${esc(fechaCorta(m.f))}${m.ed ? ` · ${esc(m.ed)} años` : ''}</span>
             <span class="mej-ev">${esc(tituloEvento(m.ev))}</span>
           </button>`).join('')}</div></section>`;
       }).join('');
@@ -366,7 +366,7 @@ export function render(cont, p, ctx) {
         const anio = g.ini.slice(0, 4);
         if (anio !== anioActual) {
           anioActual = anio;
-          seccionAnio = el(`<section class="tl-anio" aria-label="${anio}"><h2 class="tl-anio-h">${anio}</h2><div class="tl-items"></div></section>`);
+          seccionAnio = el(`<section class="tl-anio" aria-label="${esc(anio)}"><h2 class="tl-anio-h">${esc(anio)}</h2><div class="tl-items"></div></section>`);
           const antes = cuerpo.querySelector('.tl-aa');
           if (antes) cuerpo.insertBefore(seccionAnio, antes); else cuerpo.append(seccionAnio);
         }
@@ -388,11 +388,11 @@ export function render(cont, p, ctx) {
           <span class="tl-nodo" aria-hidden="true"></span>
           <p class="label tl-fecha">${esc(rangoFechas(g.ini, g.fin))}</p>
           <h3 class="tl-nombre">${esc(g.nombre)}</h3>
-          <p class="tl-lugar">Piscina de ${piscina} m${g.rp ? ` · ${g.rp} ${plural(g.rp, 'récord personal', 'récords personales')}` : ''}</p>
+          <p class="tl-lugar">Piscina de ${esc(piscina)} m${g.rp ? ` · ${esc(g.rp)} ${plural(g.rp, 'récord personal', 'récords personales')}` : ''}</p>
           <ul class="tl-pruebas">${items.map((m) => `
             <li class="tl-prueba">
-              <div class="tp-main"><p class="tp-n">${esc(m.p)}${g.items.some((x) => x.c !== m.c) ? ` <span class="tp-c">${m.c} m</span>` : ''}</p>
-                <p class="tp-s">${m.pu ? `${ordinal(m.pu)} lugar` : 'Sin puesto'}${m.ed ? ` · ${m.ed} años` : ''}${m.exh ? ' · <span class="tag">Exhibición</span>' : ''}</p></div>
+              <div class="tp-main"><p class="tp-n">${esc(m.p)}${g.items.some((x) => x.c !== m.c) ? ` <span class="tp-c">${esc(m.c)} m</span>` : ''}</p>
+                <p class="tp-s">${m.pu ? `${esc(ordinal(m.pu))} lugar` : 'Sin puesto'}${m.ed ? ` · ${esc(m.ed)} años` : ''}${m.exh ? ' · <span class="tag">Exhibición</span>' : ''}</p></div>
               <div class="tp-der">${m.esRP ? chipRP(true) : m.primera ? '<span class="tag">Primera vez</span>' : ''}<span class="col-tv"><span class="tp-t num ${m.esRP ? 'acento' : ''}">${esc(m.t)}</span>${m.esRP && m.delta > 0 ? variacion(m.delta) : ''}</span></div>
             </li>`).join('')}</ul>
         </article>`);
@@ -408,7 +408,7 @@ export function render(cont, p, ctx) {
             <span class="tl-nodo" aria-hidden="true"></span>
             <p class="label tl-fecha">${esc(fecha)}</p>
             <h3 class="tl-nombre">${esc(tituloEvento(a.ev))}</h3>
-            <ul class="tl-pruebas"><li class="tl-prueba"><div class="tp-main"><p class="tp-n">${esc(a.p)}</p><p class="tp-s">${a.pu ? `${ordinal(a.pu)} lugar` : 'Sin puesto'}</p></div><div class="tp-der"><span class="tp-t num">${esc(a.t)}</span></div></li></ul>
+            <ul class="tl-pruebas"><li class="tl-prueba"><div class="tp-main"><p class="tp-n">${esc(a.p)}</p><p class="tp-s">${a.pu ? `${esc(ordinal(a.pu))} lugar` : 'Sin puesto'}</p></div><div class="tp-der"><span class="tp-t num">${esc(a.t)}</span></div></li></ul>
           </article>`));
       });
       return s;
