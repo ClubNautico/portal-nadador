@@ -191,10 +191,12 @@ function logoMarca(tam = 28) {
 function montarShell() {
   if (shell) return;
   raiz.replaceChildren();
+  // Pantalla principal: admin -> lista de nadadores; nadador -> su resumen. Nunca toca la sesión.
+  const hrefInicio = sesion.rol === 'admin' ? '#/nadadores' : '#/inicio';
   const r = el(`
     <div class="shell">
       <aside class="side" aria-label="Menú lateral">
-        <a class="side-marca" href="#/inicio" aria-label="Club Náutico, ir al inicio">${logoMarca(30)}<span><b>Club Náutico</b><span class="label">Portal del nadador</span></span></a>
+        <a class="side-marca" data-inicio href="${hrefInicio}" aria-label="Ir al inicio del portal">${logoMarca(30)}<span><b>Club Náutico</b><span class="label">Portal del nadador</span></span></a>
         <div class="side-adm" data-slot="adm"></div>
         <nav class="side-nav" aria-label="Secciones"></nav>
         <div class="side-pie">
@@ -207,7 +209,10 @@ function montarShell() {
       </aside>
       <div class="col">
         <header class="top">
-          <p class="top-titulo" data-slot="titulo"></p>
+          <div class="top-izq">
+            <a class="top-marca" data-inicio href="${hrefInicio}" aria-label="Ir al inicio del portal">${logoMarca(26)}</a>
+            <p class="top-titulo" data-slot="titulo"></p>
+          </div>
           <button type="button" class="icon-btn" data-accion="tema"></button>
         </header>
         <div class="viewbar" data-slot="viewbar" hidden></div>
@@ -227,6 +232,7 @@ function montarShell() {
   };
   r.querySelectorAll('[data-accion="tema"]').forEach(pintarBotonTema);
   r.querySelector('[data-accion="salir"]').addEventListener('click', cerrarSesion);
+  r.querySelectorAll('[data-inicio]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); navegar(a.getAttribute('href')); }));
   r.dataset.rol = sesion.rol;
 }
 

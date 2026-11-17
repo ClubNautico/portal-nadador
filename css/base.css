@@ -41,6 +41,8 @@ a:not([class]):focus-visible { border-radius: var(--r-xs); }
 .col { min-width: 0; }
 .side { display: none; }
 .top { height: var(--top-h); display: flex; align-items: center; justify-content: space-between; padding-inline: var(--gutter); }
+.top-izq { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.top-marca { width: 44px; height: 44px; margin-left: -10px; display: grid; place-items: center; border-radius: var(--r-pill); flex: none; }
 .top-titulo { font: var(--fw-semibold) 18px/1.2 var(--font-display); letter-spacing: -0.01em; }
 main { display: block; max-width: var(--max-w); margin-inline: auto; padding: 0 var(--gutter) calc(var(--nav-h-bottom) + env(safe-area-inset-bottom) + 32px); outline: none; }
 .shell.sin-perfil main { padding-bottom: 48px; }
@@ -81,7 +83,7 @@ body.con-viewbar { --sticky-top: var(--viewbar-h); }
   .vista-h1 { position: static; width: auto; height: auto; margin: 0 0 var(--s-5); overflow: visible; clip: auto; white-space: normal; }
   .viewbar { top: 0; }
 
-  .side-marca { display: flex; align-items: center; gap: 12px; padding: 4px 8px 20px; text-decoration: none; color: var(--text); }
+  .side-marca { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 4px 8px 20px; text-decoration: none; color: var(--text); }
   .side-marca b { display: block; font: var(--fw-semibold) 16px/1.2 var(--font-display); letter-spacing: -0.01em; }
   .side-marca .label { margin-top: 3px; display: block; font-size: 11px; }
   .marca-ico { color: var(--accent-text); flex: none; }
