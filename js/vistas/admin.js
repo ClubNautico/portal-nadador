@@ -19,6 +19,10 @@ export function render(cont, _perfil, ctx) {
         </div>
         <button type="button" class="btn btn-sec admin-salir" data-salir>${icono('salir', 18)}Cerrar sesión</button>
       </header>
+      <div class="accesos adm-herramientas" aria-label="Herramientas para entrenadores">
+        <a class="acceso" href="#/comparar"><span class="acceso-ico">${icono('comparar', 22)}</span><span class="acceso-txt"><span class="acceso-tit">Comparar nadadores</span><span class="acceso-sub">Mejor marca de 2 a 4 nadadores en una prueba</span></span>${icono('chev-der', 18, 'acceso-flecha')}</a>
+        <a class="acceso" href="#/postas"><span class="acceso-ico">${icono('postas', 22)}</span><span class="acceso-txt"><span class="acceso-tit">Armar postas</span><span class="acceso-sub">Prueba combinaciones y mira el tiempo total</span></span>${icono('chev-der', 18, 'acceso-flecha')}</a>
+      </div>
       <div class="admin-barra">
         <label class="busca">
           <span class="sr-only">Buscar nadador por nombre</span>

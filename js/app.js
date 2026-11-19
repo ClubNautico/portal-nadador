@@ -19,6 +19,12 @@ export const VISTAS = {
   tecnica: { titulo: 'Técnica', icono: 'tecnica', cargar: () => import('./vistas/tecnica.js') },
   asistencia: { titulo: 'Asistencia', icono: 'asistencia', cargar: () => import('./vistas/asistencia.js') },
 };
+/** Pantallas SOLO para administradores (sin nadador elegido). Un nadador nunca las carga. */
+export const VISTAS_ADMIN = {
+  nadadores: { titulo: 'Nadadores', icono: 'usuarios', cargar: () => import('./vistas/admin.js') },
+  comparar: { titulo: 'Comparar nadadores', corto: 'Comparar', icono: 'comparar', cargar: () => import('./vistas/comparar.js') },
+  postas: { titulo: 'Armar postas', corto: 'Postas', icono: 'postas', cargar: () => import('./vistas/postas.js') },
+};
 /** Orden de la barra inferior (móvil). */
 export const NAV_INFERIOR = ['inicio', 'tiempos', 'agua', 'cuerpo', 'mas'];
 /** Destinos agrupados bajo "Más". */
@@ -99,9 +105,9 @@ async function ruta() {
   if (!esAdmin) {
     perfilRef = sesion.perfiles[0];
     if (!perfilRef) { montarShell(); mostrarError('Tu cuenta no tiene un perfil asociado. Habla con tu entrenador.'); return; }
-    if (nad || !vista || vista === 'login' || vista === 'nadadores' || !VISTAS[vista]) { reemplazar('#/inicio'); vista = 'inicio'; }
+    if (nad || !vista || vista === 'login' || VISTAS_ADMIN[vista] || !VISTAS[vista]) { reemplazar('#/inicio'); vista = 'inicio'; }
   } else {
-    if (vista === 'nadadores' || (!nad && !vista)) { vista = 'nadadores'; }
+    if (!nad && (!vista || VISTAS_ADMIN[vista])) { vista = vista || 'nadadores'; }
     else if (!VISTAS[vista]) { navegar('#/nadadores'); return; }
     else if (!nad) {
       let ultimo = null;
@@ -125,7 +131,8 @@ async function ruta() {
   montarShell();
   if (avisarNoEncontrado) aviso('No encontramos ese nadador. Elige uno de la lista.');
   const nombreVista = vista;
-  const def = nombreVista === 'nadadores' ? { titulo: 'Nadadores' } : VISTAS[nombreVista];
+  const enAdm = !!VISTAS_ADMIN[nombreVista] && esAdmin;
+  const def = enAdm ? VISTAS_ADMIN[nombreVista] : VISTAS[nombreVista];
   document.title = `${def.titulo} · Club Náutico`;
   actualizarNav(nombreVista, perfilRef, esAdmin);
 
@@ -145,7 +152,7 @@ async function ruta() {
     setParams(obj) {
       const sp = new URLSearchParams(Object.entries({ ...ctx.params, ...obj }).filter(([, v]) => v != null && v !== ''));
       ctx.params = Object.fromEntries(sp);
-      const base = nombreVista === 'nadadores' ? '#/nadadores' : hrefVista(nombreVista, esAdmin ? perfilRef.id : null);
+      const base = enAdm ? `#/${nombreVista}` : hrefVista(nombreVista, esAdmin ? perfilRef.id : null);
       reemplazar(sp.toString() ? `${base}?${sp}` : base);
     },
     cerrarSesion,
@@ -155,8 +162,8 @@ async function ruta() {
 
   try {
     let modulo, perfil = null;
-    if (nombreVista === 'nadadores') {
-      modulo = await import('./vistas/admin.js');
+    if (enAdm) {
+      modulo = await def.cargar();
     } else {
       [modulo, perfil] = await Promise.all([def.cargar(), Sesion.cargarPerfil(perfilRef)]);
     }
@@ -243,9 +250,9 @@ function itemNav(nombre, href, activo, clase) {
 
 function actualizarNav(nombre, perfilRef, esAdmin) {
   const nadId = esAdmin ? perfilRef?.id : null;
-  const enNad = nombre === 'nadadores';
+  const enNad = esAdmin && !!VISTAS_ADMIN[nombre];   // pantallas de administrador (sin nadador elegido)
   shell.r.classList.toggle('sin-perfil', enNad);
-  shell.titulo.textContent = enNad ? 'Nadadores' : VISTAS[nombre].titulo;
+  shell.titulo.textContent = enNad ? VISTAS_ADMIN[nombre].titulo : VISTAS[nombre].titulo;
   const activoMas = NAV_MAS.includes(nombre) ? 'mas' : nombre;
 
   if (enNad) {
@@ -256,7 +263,8 @@ function actualizarNav(nombre, perfilRef, esAdmin) {
     shell.bottom.innerHTML = NAV_INFERIOR.map((n) => itemNav(n, hrefVista(n, nadId), n === activoMas, 'bot-item')).join('');
   }
   if (esAdmin) {
-    shell.adm.innerHTML = `<a class="side-item side-item-adm" href="#/nadadores" ${enNad ? 'aria-current="page"' : ''}>${icono('usuarios', 24)}<span>Nadadores</span></a>`;
+    shell.adm.innerHTML = Object.entries(VISTAS_ADMIN).map(([n, v]) =>
+      `<a class="side-item side-item-adm" href="#/${n}" ${enNad && nombre === n ? 'aria-current="page"' : ''}>${icono(v.icono, 24)}<span>${esc(v.titulo)}</span></a>`).join('');
     shell.viewbar.hidden = enNad;
     if (!enNad) {
       shell.viewbar.innerHTML = `<span class="vb-txt"><span class="vb-ojo">${icono('ojo', 16)}</span>Viendo a <b>${esc(nombreLimpio(perfilRef.etiqueta))}</b></span><a class="vb-cambiar" href="#/nadadores">Cambiar nadador</a>`;

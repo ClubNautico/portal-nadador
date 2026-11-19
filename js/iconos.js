@@ -26,6 +26,8 @@ const P = {
   obra: '<path d="m14.5 6.5 3 3-9.5 9.5H5v-3z"/><path d="m13 8 3 3M16.5 4.5l3 3"/>',
   carril: '<path d="M3 7h18M3 12h18M3 17h18"/>',
   linea: '<path d="M7 3.5v17"/><circle cx="7" cy="7" r="2"/><circle cx="7" cy="17" r="2"/><path d="M12.5 7H20M12.5 17H18"/>',
+  comparar: '<path d="M7 20V9M12 20V4M17 20v-8"/><path d="M4 20h16"/>',
+  postas: '<circle cx="5.5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="18.5" cy="12" r="2.2"/><path d="M7.7 12h2.1M14.2 12h2.1"/>',
   medalla: '<circle cx="12" cy="14.5" r="5.5"/><path d="M8.5 3.5 10.5 9.5M15.5 3.5 13.5 9.5M12 12v5"/>',
 };
 
