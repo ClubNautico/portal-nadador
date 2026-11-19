@@ -52,6 +52,7 @@ export function mostrarLogin(raiz, { onExito, mensaje = '' }) {
             <button type="submit" class="btn btn-primario btn-login"><span class="btn-txt">Ingresar</span><svg class="spin" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="2" stroke-opacity=".3"/><path d="M8 2a6 6 0 0 1 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
           </form>
           <p class="login-ayuda">¿Olvidaste tu contraseña? Pídela a tu entrenador.</p>
+          <p class="login-ayuda"><a href="/">&lsaquo; Volver a la portada del club</a></p>
         </div>
         <button type="button" class="icon-btn login-tema" data-accion="tema"></button>
       </section>
@@ -139,6 +140,12 @@ export function mostrarLogin(raiz, { onExito, mensaje = '' }) {
       btn.disabled = false;
       btn.classList.remove('cargando');
       txt.textContent = 'Ingresar';
+      if (ex instanceof Sesion.ErrorProfesor) {
+        mostrarError('Los profesores entran desde el Panel del profesor.');
+        err.insertAdjacentHTML('beforeend', '<a class="btn-login" style="margin-top:10px;text-decoration:none" href="https://clubnautico.github.io/">Ir al Panel del profesor</a>');
+        pInput.value = '';
+        return;
+      }
       if (ex instanceof Sesion.ErrorRed) mostrarError(ex.message && ex.message.includes('https') ? ex.message : 'No pudimos conectar. Revisa tu conexión e intenta de nuevo.');
       else mostrarError('Usuario o contraseña incorrectos. Revisa e intenta de nuevo.');
       pInput.focus();

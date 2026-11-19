@@ -16,6 +16,13 @@ export function msDe(f) {
  *  _comps    competencias agrupadas, de la más antigua a la más reciente
  */
 export function prepararPerfil(raw) {
+  // Datos que falten o vengan en null: se dejan vacíos para que ninguna vista se caiga.
+  for (const k of ['tiempos', 'testsAgua', 'testsFisicos', 'rm', 'antropometria', 'asistencia', 'aguasAbiertas']) {
+    if (!Array.isArray(raw[k])) raw[k] = [];
+  }
+  if (!raw.mejores || typeof raw.mejores !== 'object') raw.mejores = {};
+  if (!raw.tecnica || typeof raw.tecnica !== 'object' || Array.isArray(raw.tecnica)) raw.tecnica = {};
+  for (const k of ['evals', 'mejorar', 'brazadas']) if (!Array.isArray(raw.tecnica[k])) raw.tecnica[k] = [];
   const t = (raw.tiempos || []).filter((m) => m.f && m.s != null).map((m, i) => ({ ...m, _i: i, ms: msDe(m.f) }));
   t.sort((a, b) => a.ms - b.ms || a._i - b._i);
 
@@ -47,7 +54,6 @@ export function prepararPerfil(raw) {
   raw._t = t;
   raw._pruebas = pruebas;
   raw._comps = agruparCompetencias(t);
-  raw.aguasAbiertas = raw.aguasAbiertas || [];
   return raw;
 }
 

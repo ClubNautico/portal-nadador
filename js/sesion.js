@@ -14,6 +14,13 @@ export function usuarioRecordado() {
 
 export class ErrorCredenciales extends Error {}
 export class ErrorRed extends Error {}
+export class ErrorProfesor extends Error {}   // un profesor (admin) intentó ingresar en la versión pública: entra por el Panel del profesor
+
+/** Los profesores entran solo por la puerta del club. En la versión pública (github.io) el ingreso es solo para nadadores. */
+function entradaProfesorBloqueada() {
+  const h = location.hostname;
+  return !bajoPuerta() && h !== 'localhost' && h !== '127.0.0.1' && h !== '[::1]';   // vista previa en la PC del club: permitida
+}
 
 let actual = null;                 // { rol, nombre, perfiles, h, recordar }
 const cache = new Map();           // id -> perfil preparado
@@ -89,6 +96,7 @@ export async function iniciar(usuario, password, recordar) {
   } catch {
     throw new ErrorCredenciales();
   }
+  if (llavero.rol === 'admin' && entradaProfesorBloqueada()) throw new ErrorProfesor();
   guardar(h, raw, !!recordar);
   recordarUsuario(usuario, !!recordar);
   return fijar(llavero, h, !!recordar);
@@ -140,6 +148,7 @@ export async function restaurar() {
   if (!guardado) return null;
   try {
     const llavero = await abrirLlavero(guardado.h, C.b64aBytes(guardado.k));
+    if (llavero.rol === 'admin' && entradaProfesorBloqueada()) { limpiarAlmacen(); return null; }
     return fijar(llavero, guardado.h, recordar);
   } catch (e) {
     if (e instanceof ErrorCredenciales) { limpiarAlmacen(); return null; }

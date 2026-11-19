@@ -15,20 +15,20 @@ function resumenTests(p, ctx) {
   out.push({ v: 'tiempos', ico: 'tiempos', titulo: 'Tiempos', dato: nPruebas ? `${nPruebas} ${plural(nPruebas, 'prueba', 'pruebas')} con marca` : 'Aún sin marcas', sub: p._t.length ? `Última: ${fechaCorta(p._t[p._t.length - 1].f)}` : '' });
   // Agua
   const ta = ultimoPor(p.testsAgua);
-  out.push({ v: 'agua', ico: 'agua', titulo: 'Tests de agua', dato: ta ? `${ta.dist} m ${String(ta.est).toLowerCase()} · ${ta.t}` : 'Aún sin tests', sub: ta ? `Último test: ${ta.f ? fechaCorta(ta.f) : 'sin fecha'}` : 'Se mostrarán aquí' });
+  out.push({ v: 'agua', ico: 'agua', titulo: 'Tests de agua', dato: ta ? `${ta.dist ?? '–'} m ${String(ta.est ?? '').toLowerCase()} · ${ta.t ?? '–'}` : 'Aún sin tests', sub: ta ? `Último test: ${ta.f ? fechaCorta(ta.f) : 'sin fecha'}` : 'Se mostrarán aquí' });
   // Fuerza
   const rm = ultimoPor(p.rm);
   const tf = ultimoPor(p.testsFisicos);
   let fz = { dato: 'Aún sin tests', sub: 'Se mostrarán aquí' };
-  if (rm && (!tf || (rm.f || '') >= (tf.f || ''))) fz = { dato: `${tituloEvento(rm.ej)} · ${rm.v} ${String(rm.u || '').toLowerCase()}`, sub: `1RM del ${rm.f ? fechaCorta(rm.f) : 'registro'}` };
-  else if (tf) fz = { dato: `${tf.b}: ${tf.t}`, sub: `Último test: ${tf.f ? fechaCorta(tf.f) : 'sin fecha'}` };
+  if (rm && (!tf || (rm.f || '') >= (tf.f || ''))) fz = { dato: `${tituloEvento(rm.ej)} · ${rm.v ?? '–'} ${String(rm.u || '').toLowerCase()}`, sub: `1RM del ${rm.f ? fechaCorta(rm.f) : 'registro'}` };
+  else if (tf) fz = { dato: `${tf.b ?? 'Test'}: ${tf.t ?? '–'}`, sub: `Último test: ${tf.f ? fechaCorta(tf.f) : 'sin fecha'}` };
   out.push({ v: 'fuerza', ico: 'fuerza', titulo: 'Fuerza', ...fz });
   // Cuerpo
   const an = ultimoPor(p.antropometria);
   out.push({ v: 'cuerpo', ico: 'cuerpo', titulo: 'Cuerpo', dato: an ? [an.peso != null ? `${an.peso} kg` : null, an.talla != null ? `${an.talla} cm` : null].filter(Boolean).join(' · ') || 'Medición registrada' : 'Aún sin mediciones', sub: an ? `Medido el ${fechaCorta(an.f)}` : '' });
   // Técnica
   const ev = ultimoPor(p.tecnica?.evals);
-  out.push({ v: 'tecnica', ico: 'tecnica', titulo: 'Técnica', dato: ev ? `Evaluación de ${String(ev.est).toLowerCase()}` : 'Aún sin evaluaciones', sub: ev ? fechaCorta(ev.f) : '' });
+  out.push({ v: 'tecnica', ico: 'tecnica', titulo: 'Técnica', dato: ev ? (ev.est ? `Evaluación de ${String(ev.est).toLowerCase()}` : 'Evaluación registrada') : 'Aún sin evaluaciones', sub: ev && ev.f ? fechaCorta(ev.f) : '' });
   // Asistencia
   const as = (p.asistencia || []).filter((a) => a.pct != null);
   let ultMes = as.length ? as.reduce((m, a) => (a.mes > m ? a.mes : m), '') : null;

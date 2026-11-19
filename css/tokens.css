@@ -10,24 +10,24 @@
   --overlay:       rgba(3, 6, 12, .72);
 
   /* ---- Bordes ---- */
-  --border:        #1A2742;   /* filo de 1 px estándar */
-  --border-strong: #2B3D63;   /* hover, inputs, separadores fuertes */
+  --border:        #1F2E4D;   /* filo de 1 px estándar */
+  --border-strong: #5A6F99;   /* hover, inputs, separadores fuertes */
   --border-hi:     rgba(255,255,255,.06); /* brillo en el borde superior de paneles */
 
   /* ---- Texto ---- */
   --text:          #F2F5FB;   /* primario */
-  --text-2:        #B4BFD6;   /* secundario */
-  --text-3:        #8696B5;   /* terciario: etiquetas, ejes, metadatos */
+  --text-2:        #C3CDE2;   /* secundario */
+  --text-3:        #9AA9C6;   /* terciario: etiquetas, ejes, metadatos */
   --text-on-accent:#FFFFFF;
 
   /* ---- Acento (azul eléctrico, matiz ~222°, nunca violeta) ---- */
   --accent:        #2F6BFF;   /* relleno de botón primario, barras, puntos */
   --accent-hover:  #4A7FFF;
   --accent-press:  #2558E6;
-  --accent-text:   #5B93FF;   /* enlaces y cifras acentuadas sobre fondo oscuro */
+  --accent-text:   #7BA6FF;   /* enlaces y cifras acentuadas sobre fondo oscuro */
   --accent-soft:   #102448;   /* fondo tintado: chip activo, récord */
-  --accent-line:   rgba(91,147,255,.45); /* borde de elementos acentuados */
-  --focus-ring:    0 0 0 2px var(--bg), 0 0 0 4px #5B93FF;
+  --accent-line:   rgba(91,147,255,.55); /* borde de elementos acentuados */
+  --focus-ring:    0 0 0 2px var(--bg), 0 0 0 4px #7BA6FF;
 
   /* ---- Semánticos ---- */
   --ok:            #3DDC97;   /* mejora, éxito */
@@ -93,12 +93,12 @@
   --overlay:       rgba(10,18,36,.45);
 
   --border:        #D5DFEF;
-  --border-strong: #AFBDD6;
+  --border-strong: #8C9BB8;
   --border-hi:     rgba(255,255,255,.9);
 
   --text:          #0A1224;
-  --text-2:        #44516D;
-  --text-3:        #52607D;
+  --text-2:        #33415C;
+  --text-3:        #4A5876;
   --text-on-accent:#FFFFFF;
 
   --accent:        #1D55E8;
@@ -106,7 +106,7 @@
   --accent-press:  #1745C2;
   --accent-text:   #1A4FD6;
   --accent-soft:   #E3ECFF;
-  --accent-line:   rgba(29,85,232,.40);
+  --accent-line:   rgba(29,85,232,.45);
   --focus-ring:    0 0 0 2px var(--bg), 0 0 0 4px #1D55E8;
 
   --ok:            #0A7245;  --ok-soft:   rgba(10,114,69,.10);
@@ -131,3 +131,11 @@
 @media (min-width: 768px)  { :root { --gutter: 24px; } }
 @media (min-width: 1280px) { :root { --gutter: 40px; --max-w: 1200px; } }
 
+/* Nombres comunes de DISEÑO CLUB.md (alias) */
+:root, [data-theme="light"] {
+  --fondo: var(--bg); --superficie: var(--surface-1); --superficie-2: var(--surface-2); --superficie-3: var(--surface-3);
+  --borde: var(--border); --borde-fuerte: var(--border-strong);
+  --texto: var(--text); --texto-suave: var(--text-2); --texto-tenue: var(--text-3);
+  --acento: var(--accent); --acento-fuerte: var(--accent-hover); --acento-texto: var(--accent-text); --acento-suave: var(--accent-soft);
+  --aviso: var(--warn); --error: var(--bad); --velo: var(--overlay);
+}

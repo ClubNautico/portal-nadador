@@ -204,12 +204,14 @@ function montarShell() {
     <div class="shell">
       <aside class="side" aria-label="Menú lateral">
         <a class="side-marca" data-inicio href="${hrefInicio}" aria-label="Ir al inicio del portal">${logoMarca(30)}<span><b>Club Náutico</b><span class="label">Portal del nadador</span></span></a>
+        ${Sesion.bajoPuerta() ? '' : `<a class="side-item side-item-adm" data-volver-panel href="/">${icono('chev-izq', 24)}<span>Portada del club</span></a>`}
         <div class="side-adm" data-slot="adm"></div>
         <nav class="side-nav" aria-label="Secciones"></nav>
         <div class="side-pie">
           <div class="side-usuario"><span class="avatar avatar-sm" style="--av:32px" aria-hidden="true">${esc(iniciales(sesion.nombre))}</span><span class="side-user-nombre">${esc(nombreLimpio(sesion.nombre))}</span></div>
           <div class="side-botones">
             <button type="button" class="icon-btn" data-accion="tema"></button>
+            ${Sesion.bajoPuerta() ? `<a class="btn-lateral" href="/">${icono('inicio', 20)}<span>Panel</span></a>` : ''}
             <button type="button" class="btn-lateral" data-accion="salir">${icono('salir', 20)}<span>Cerrar sesión</span></button>
           </div>
         </div>
@@ -218,9 +220,11 @@ function montarShell() {
         <header class="top">
           <div class="top-izq">
             <a class="top-marca" data-inicio href="${hrefInicio}" aria-label="Ir al inicio del portal">${logoMarca(26)}</a>
+            ${Sesion.bajoPuerta() ? '' : '<a class="vb-cambiar" data-volver-panel href="/" aria-label="Portada del club">&lsaquo; Portada</a>'}
             <p class="top-titulo" data-slot="titulo"></p>
           </div>
-          <button type="button" class="icon-btn" data-accion="tema"></button>
+          <div style="display:flex;gap:4px">${Sesion.bajoPuerta() ? `<a class="icon-btn" href="/" aria-label="Volver al Panel del profesor">${icono('inicio', 22)}</a>` : ''}
+          <button type="button" class="icon-btn" data-accion="tema"></button></div>
         </header>
         <div class="viewbar" data-slot="viewbar" hidden></div>
         <main id="contenido" tabindex="-1"></main>
