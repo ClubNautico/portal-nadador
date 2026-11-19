@@ -279,6 +279,7 @@ function actualizarNav(nombre, perfilRef, esAdmin) {
 
 function cerrarSesion() {
   Sesion.cerrar();
+  if (Sesion.bajoPuerta()) { Sesion.salirDePuerta(); return; }   // dentro de la puerta, salir cierra también la sesión de la puerta
   sesion = null;
   shell = null;
   vistaActual = null;

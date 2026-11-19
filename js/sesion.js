@@ -94,8 +94,41 @@ export async function iniciar(usuario, password, recordar) {
   return fijar(llavero, h, !!recordar);
 }
 
+/* Ingreso único: dentro de la puerta del club (https://…/portal/) la puerta ya sabe quién es el profesor.
+   Entrega, solo al mismo origen y con su cookie, la clave derivada del llavero; así el portal se abre solo.
+   Fuera de la puerta (github.io, vista previa local) esto no hace nada y el portal funciona como siempre. */
+export function bajoPuerta() {
+  return location.pathname === '/portal' || location.pathname.startsWith('/portal/');
+}
+
+async function entrarPorPuerta() {
+  if (!bajoPuerta()) return null;
+  let j;
+  try {
+    const r = await fetch('/portal-sesion', { cache: 'no-store', credentials: 'same-origin' });
+    if (!r.ok) return null;
+    j = await r.json();
+  } catch { return null; }
+  if (!j || j.ok !== true || !j.usuario || !j.k) return null;
+  try {
+    const h = await C.sha256Hex(normalizarUsuario(j.usuario));
+    const llavero = await abrirLlavero(h, C.b64aBytes(j.k));
+    return fijar(llavero, h, false);
+  } catch { return null; }   // sin material válido (p. ej. datos nuevos): se muestra el ingreso normal
+}
+
+/** Cierra también la sesión de la puerta (solo dentro de la puerta). Devuelve true si redirige. */
+export async function salirDePuerta() {
+  if (!bajoPuerta()) return false;
+  try { await fetch('/salir', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: '' }); } catch {}
+  location.replace('/ingreso');
+  return true;
+}
+
 export async function restaurar() {
   if (!C.disponible()) return null;
+  const p = await entrarPorPuerta();
+  if (p) return p;
   let guardado = null, recordar = false;
   try { localStorage.removeItem(KEY); } catch {}   // migración: nunca restaurar desde localStorage
   for (const [st, rec] of [[sessionStorage, false]]) {
