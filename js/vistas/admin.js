@@ -41,7 +41,7 @@ export function render(cont, _perfil, ctx) {
   const tarjeta = (p) => `
     <a class="nad-card" href="#/n/${encodeURIComponent(p.id)}/inicio">
       ${avatar(iniciales(p.etiqueta), 48)}
-      <span class="nad-txt"><span class="nad-n">${esc(nombre(p))}</span><span class="nad-c">${esc(p.categoria)}${/^\d/.test(p.categoria) ? ' años' : ''}</span></span>
+      <span class="nad-txt"><span class="nad-n">${esc(nombre(p))}</span><span class="nad-c">${esc(p.categoria || 'Sin categoría')}${/^\d/.test(p.categoria || '') ? ' años' : ''}</span></span>
       ${icono('chev-der', 18, 'acceso-flecha')}
     </a>`;
 
@@ -59,7 +59,7 @@ export function render(cont, _perfil, ctx) {
       return;
     }
     const grupos = new Map();
-    f.forEach((p) => { if (!grupos.has(p.categoria)) grupos.set(p.categoria, []); grupos.get(p.categoria).push(p); });
+    f.forEach((p) => { const c = p.categoria || 'Sin categoría'; if (!grupos.has(c)) grupos.set(c, []); grupos.get(c).push(p); });
     const cats = [...grupos.keys()].sort((a, b) => numCat(a) - numCat(b) || a.localeCompare(b));
     host.innerHTML = cats.map((c) => {
       const l = grupos.get(c).sort((a, b) => normalizar(a.etiqueta).localeCompare(normalizar(b.etiqueta)));
