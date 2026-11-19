@@ -119,3 +119,8 @@ body.con-viewbar { --sticky-top: var(--viewbar-h); }
   .col { margin: 0; }
   body { background: #fff; color: #000; }
 }
+
+/* Botón "‹ Portada" de la barra superior (reusa .vb-cambiar): chip táctil, no enlace subrayado */
+.top .vb-cambiar { margin-block: 0; margin-left: 4px; padding: 0 12px; min-height: 44px; border: 1px solid var(--border-strong); border-radius: var(--r-sm); background: var(--surface-1); text-decoration: none; font-size: 15px; flex: none; }
+.top .vb-cambiar:hover { border-color: var(--accent-line); background: var(--accent-soft); }
+.top .vb-cambiar:focus-visible { outline: none; box-shadow: var(--focus-ring); }

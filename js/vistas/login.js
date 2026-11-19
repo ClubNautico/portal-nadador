@@ -142,7 +142,7 @@ export function mostrarLogin(raiz, { onExito, mensaje = '' }) {
       txt.textContent = 'Ingresar';
       if (ex instanceof Sesion.ErrorProfesor) {
         mostrarError('Los profesores entran desde el Panel del profesor.');
-        err.insertAdjacentHTML('beforeend', '<a class="btn-login" style="margin-top:10px;text-decoration:none" href="https://clubnautico.github.io/">Ir al Panel del profesor</a>');
+        err.insertAdjacentHTML('beforeend', '<a class="btn btn-primario btn-login btn-ir-panel" href="https://clubnautico.github.io/">Ir al Panel del profesor</a>');
         pInput.value = '';
         return;
       }

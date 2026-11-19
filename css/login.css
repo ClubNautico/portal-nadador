@@ -43,3 +43,9 @@
   .login-tiempo-sub { color: var(--ok); font: var(--fw-medium) 14px/1.3 var(--font-display); }
   .login-hero { background: var(--surface-1); padding: 28px 0; }
 }
+
+/* Enlaces de vuelta a la portada / al Panel (táctiles, visibles) */
+.login-ayuda a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--border-strong); border-radius: var(--r-sm); color: var(--accent-text); font-weight: 600; text-decoration: none; background: var(--surface-1); }
+.login-ayuda a:hover { border-color: var(--accent-line); background: var(--accent-soft); }
+.login-ayuda a:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.btn-ir-panel { margin-top: 10px; }
