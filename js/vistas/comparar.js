@@ -2,7 +2,7 @@
 import { icono } from '../iconos.js';
 import { el, vacio, errorCaja, avatar, guardado, grupoRadio } from '../ui.js';
 import { esc, iniciales, normalizar, fmtTiempo, fechaCorta, tituloEvento, ordinal } from '../formato.js';
-import { cargarTodos, mejorMarca, pruebasDisponibles, inicioUltimoAnio, MODOS, navAdminHtml, textoDif } from '../marcas.js';
+import { cargarTodos, mejorMarca, pruebasDisponibles, inicioUltimoAnio, MODOS, navAdminHtml, textoDif, CATS, enCategoria, textoCategoria } from '../marcas.js';
 
 const MAX = 4;
 const ORDEN_ESTILOS = ['Libre', 'Espalda', 'Pecho', 'Mariposa', 'Combinado'];
@@ -38,7 +38,7 @@ export async function render(cont, _perfil, ctx) {
 
   const pref = guardado.leer(CLAVE, {}) || {};
   const S = {
-    sel: [], grupo: 'todos', q: '',
+    sel: [], grupo: 'todos', q: '', cat: 'todas',
     est: pref.est || 'Libre', dist: Number(pref.dist) || 50,
     pool: pref.pool === '50' ? '50' : '25',
     modo: pref.modo === 'anio' ? 'anio' : 'historica',
@@ -69,6 +69,7 @@ export async function render(cont, _perfil, ctx) {
         <div class="herr-elegidos" id="cm-elegidos" aria-live="polite"></div>
         <label class="busca"><span class="sr-only">Buscar nadador por nombre</span>${icono('buscar', 20)}<input type="search" id="cm-q" placeholder="Buscar por nombre" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
         <div class="herr-fila-chips" id="cm-grupos"></div>
+        <div class="herr-ctl"><span class="label">Categoría de edad (al 1 de enero de ${new Date().getFullYear()})</span><div class="herr-fila-chips" id="cm-cat"></div></div>
         <ul class="cmp-lista" id="cm-lista" aria-label="Nadadores"></ul>
       </section>
 
@@ -102,15 +103,15 @@ export async function render(cont, _perfil, ctx) {
   }
   function pintarLista() {
     const nq = normalizar(S.q);
-    const f = lista.filter((n) => (S.grupo === 'todos' || n.grupo === S.grupo) && (!nq || normalizar(n.nombre + ' ' + (n.perfil.nombre || '')).includes(nq)));
-    if (!f.length) { hLista.innerHTML = `<li class="herr-ayuda herr-pad">Nadie coincide${S.q ? ` con “${esc(S.q)}”` : ''}. Prueba con otro nombre o cambia el grupo.</li>`; return; }
+    const f = lista.filter((n) => (S.grupo === 'todos' || n.grupo === S.grupo) && enCategoria(n, S.cat) && (!nq || normalizar(n.nombre + ' ' + (n.perfil.nombre || '')).includes(nq)));
+    if (!f.length) { hLista.innerHTML = `<li class="herr-ayuda herr-pad">Nadie coincide${S.q ? ` con “${esc(S.q)}”` : ''}. Prueba con otro nombre o cambia el grupo o la categoría.</li>`; return; }
     const lleno = S.sel.length >= MAX;
     hLista.innerHTML = f.map((n) => {
       const on = S.sel.includes(n.id);
       const bloq = lleno && !on;
       return `<li><button type="button" class="cmp-nad" data-id="${esc(n.id)}" aria-pressed="${on}" ${bloq ? 'aria-disabled="true"' : ''}>
         ${avatar(iniciales(n.nombre), 36)}
-        <span class="cmp-nad-txt"><span class="cmp-nad-n">${esc(n.nombre)}</span><span class="cmp-nad-g">${esc(n.grupo)}</span></span>
+        <span class="cmp-nad-txt"><span class="cmp-nad-n">${esc(n.nombre)}</span><span class="cmp-nad-g">${esc(n.grupo)} · ${esc(textoCategoria(n))}</span></span>
         <span class="cmp-nad-marca" aria-hidden="true">${on ? icono('check', 20) : ''}</span>
         <span class="sr-only">${on ? 'Elegido' : bloq ? `Ya elegiste ${MAX}` : 'Sin elegir'}</span></button></li>`;
     }).join('');
@@ -180,6 +181,7 @@ export async function render(cont, _perfil, ctx) {
       <p class="herr-nota">La diferencia se mide contra el nadador más rápido de la lista. Incluye marcas de exhibición (fuera de concurso).</p>`;
   }
 
+  grupoRadio($('#cm-cat'), { items: CATS, valor: S.cat, aria: 'Categoría de edad', onChange(v) { S.cat = v; pintarLista(); } });
   pintarElegidos(); pintarGrupos(); pintarLista(); pintarRes();
   if (lista.fallos) cont.querySelector('.herr').append(el(`<p class="herr-aviso">No se pudieron abrir ${lista.fallos} ${lista.fallos === 1 ? 'nadador' : 'nadadores'}; no aparecen en la lista.</p>`));
 }

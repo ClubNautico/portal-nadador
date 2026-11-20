@@ -2,7 +2,7 @@
 import { icono } from '../iconos.js';
 import { el, vacio, errorCaja, avatar, guardado, grupoRadio, aviso } from '../ui.js';
 import { esc, iniciales, normalizar, fmtTiempo, variacionTiempo, plural } from '../formato.js';
-import { cargarTodos, mejorMarca, MODOS, ESTILOS_POSTA, navAdminHtml, textoDif } from '../marcas.js';
+import { cargarTodos, mejorMarca, MODOS, ESTILOS_POSTA, navAdminHtml, textoDif, CATS, catEtiqueta, enCategoria, textoCategoria } from '../marcas.js';
 
 const PREFS = 'portal.postas.prefs';
 const VARS = 'portal.postas.variantes';
@@ -50,11 +50,13 @@ export async function render(cont, _perfil, ctx) {
     dist: Number(pref.dist) || 100,
     pool: pref.pool === '50' ? '50' : '25',
     modo: pref.modo === 'anio' ? 'anio' : 'historica',
+    cat: CATS.some((c) => c.valor === pref.cat) ? pref.cat : 'todas',
+    chicos: pref.chicos === true,
     slots: Array.isArray(pref.slots) && pref.slots.length === 4 ? pref.slots.map((id) => (porId.has(id) ? id : null)) : [null, null, null, null],
   };
   if (!DISTS[S.tipo].includes(S.dist)) S.dist = 100;
   let variantes = cargarVariantes();
-  const guardarPref = () => guardado.poner(PREFS, { rama: S.rama, tipo: S.tipo, dist: S.dist, pool: S.pool, modo: S.modo, slots: S.slots });
+  const guardarPref = () => guardado.poner(PREFS, { rama: S.rama, tipo: S.tipo, dist: S.dist, pool: S.pool, modo: S.modo, cat: S.cat, chicos: S.chicos, slots: S.slots });
 
   /* ---------- cálculo ---------- */
   const estLeg = (i) => (S.tipo === 'combinado' ? ESTILOS_POSTA[i] : 'Libre');
@@ -64,7 +66,7 @@ export async function render(cont, _perfil, ctx) {
     return n ? mejorMarca(n.perfil, cfg.tipo === 'combinado' ? ESTILOS_POSTA[i] : 'Libre', cfg.dist, cfg.pool, cfg.modo) : null;
   };
   const ramaOk = (sexo, rama = S.rama) => rama === 'X' || (rama === 'F' ? sexo !== 'M' : sexo !== 'F');
-  const firma = (c) => `${c.rama}|${c.tipo}|${c.dist}|${c.pool}|${c.modo}`;
+  const firma = (c) => `${c.rama}|${c.tipo}|${c.dist}|${c.pool}|${c.modo}|${c.cat || 'todas'}`;
 
   function resumenEquipo(slots, cfg) {
     const filas = slots.map((id, i) => {
@@ -96,6 +98,22 @@ export async function render(cont, _perfil, ctx) {
     return res;
   }
 
+  /** Avisos de la categoría de edad (no bloquean). */
+  function avisosCat(slots, cat, chicos) {
+    const res = [];
+    if (!cat || cat === 'todas') return res;
+    const elegidos = slots.map((id) => porId.get(id)).filter(Boolean);
+    const nombreCat = catEtiqueta(cat);
+    for (const n of elegidos) {
+      if (enCategoria(n, cat, chicos)) continue;
+      if (!n.cat && n.edad1 == null && !n.menor) res.push({ tipo: 'info', texto: `No hay fecha de nacimiento ni categoría de ${n.nombre}; no se pudo comprobar la categoría ${nombreCat}.` });
+      else if (!n.cat) res.push({ tipo: 'mal', texto: `${n.nombre} es menor de 9 años${n.edad1 != null ? ` (${n.edad1} al 1 de enero)` : ''}: no corresponde en la categoría ${nombreCat}.` });
+      else res.push({ tipo: 'mal', texto: `${n.nombre} es de la categoría ${catEtiqueta(n.cat)}${n.edad1 != null ? ` (${n.edad1} años al 1 de enero)` : ''}: no corresponde en la categoría ${nombreCat}${chicos ? ' (ni como nadador más chico)' : ''}.` });
+    }
+    return res;
+  }
+  const avisosTodos = (slots, cfg) => [...avisosRama(slots, cfg.rama), ...avisosCat(slots, cfg.cat, cfg.chicos)];
+
   /* ---------- pantalla ---------- */
   cont.innerHTML = `
     <div class="herr">
@@ -111,6 +129,8 @@ export async function render(cont, _perfil, ctx) {
           <div><span class="label">Distancia de cada nadador</span><div class="seg-wrap"><div id="po-dist"></div></div></div>
           <div><span class="label">Piscina</span><div class="seg-wrap"><div id="po-pool"></div></div></div>
           <div><span class="label">Qué marca usar</span><div class="seg-wrap"><div id="po-modo"></div></div></div>
+          <div class="herr-ancho"><span class="label">Categoría de edad (edad al 1 de enero de ${new Date().getFullYear()})</span><div class="herr-fila-chips" id="po-cat"></div>
+            <label class="herr-casilla"><input type="checkbox" id="po-chicos"><span>Incluir nadadores más chicos <span class="herr-ayuda">(pueden nadar hacia arriba)</span></span></label></div>
         </div>
         ${hayRamaX ? '' : '<p class="herr-aviso">Todavía no está anotado si cada nadador es mujer u hombre. Puedes armar postas igual, pero no se podrá comprobar la rama ni sugerir una posta mixta.</p>'}
       </section>
@@ -141,7 +161,12 @@ export async function render(cont, _perfil, ctx) {
   RC.dist = grupoRadio($('#po-dist'), { variante: 'seg', items: itemsDist(), valor: String(S.dist), aria: 'Distancia', onChange: cambio((v) => { S.dist = Number(v); }) });
   RC.pool = grupoRadio($('#po-pool'), { variante: 'seg', items: [{ valor: '25', etiqueta: '25 m' }, { valor: '50', etiqueta: '50 m' }], valor: S.pool, aria: 'Piscina', onChange: cambio((v) => { S.pool = v; }) });
   RC.modo = grupoRadio($('#po-modo'), { variante: 'seg', items: MODOS, valor: S.modo, aria: 'Qué marca usar', onChange: cambio((v) => { S.modo = v; }) });
+  RC.cat = grupoRadio($('#po-cat'), { items: CATS, valor: S.cat, aria: 'Categoría de edad', onChange: cambio((v) => { S.cat = v; }) });
+  const chkChicos = $('#po-chicos');
+  chkChicos.checked = S.chicos;
+  chkChicos.addEventListener('change', () => { S.chicos = chkChicos.checked; guardarPref(); decir(''); pintar(); });
   function sincronizarControles() {
+    RC.cat.set(S.cat); chkChicos.checked = S.chicos;
     RC.rama.set(S.rama); RC.tipo.set(S.tipo); RC.dist.setItems(itemsDist(), String(S.dist)); RC.pool.set(S.pool); RC.modo.set(S.modo);
   }
 
@@ -152,7 +177,7 @@ export async function render(cont, _perfil, ctx) {
     const nomPosta = `4 × ${S.dist} m ${S.tipo}`;
     hSlots.innerHTML = R.filas.map((f) => {
       const etq = S.tipo === 'combinado' ? `Posta ${f.i + 1} · ${ESTILOS_POSTA[f.i]}` : `Posta ${f.i + 1}`;
-      const sub = f.n ? `${f.n.sexo ? SEXO_TXT[f.n.sexo] + ' · ' : ''}${f.n.grupo}` : '';
+      const sub = f.n ? `${f.n.sexo ? SEXO_TXT[f.n.sexo] + ' · ' : ''}${f.n.grupo} · ${textoCategoria(f.n)}` : '';
       const tiempo = !f.n ? '' : f.m ? `<span class="po-slot-t">${fmtTiempo(f.m.s)}</span>` : '<span class="po-slot-t po-sin">Sin marca</span>';
       return `<li class="po-li"><button type="button" class="po-slot ${f.n ? '' : 'po-vacio'}" data-i="${f.i}" aria-haspopup="dialog" aria-label="${esc(etq)}: ${f.n ? esc(f.n.nombre) + (f.m ? ', ' + fmtTiempo(f.m.s) : ', sin marca') + '. Toca para cambiar' : 'sin nadador. Toca para elegir'}">
         <span class="po-slot-n" aria-hidden="true">${f.i + 1}</span>
@@ -186,7 +211,7 @@ export async function render(cont, _perfil, ctx) {
         <p class="po-total-s"><b>Total incompleto:</b> ${esc(partes.join('; ') || 'elige a los 4 nadadores')}.${R.conTiempo ? ` Suma de los que sí tienen marca: <b>${fmtTiempo(R.suma)}</b> (no es el tiempo de la posta).` : ''}</p>`;
     }
     // avisos de rama
-    const av = avisosRama(S.slots, S.rama);
+    const av = avisosTodos(S.slots, S);
     hAvisos.innerHTML = av.length ? `<ul class="po-avisos">${av.map((a) => `<li class="${a.tipo === 'mal' ? 'herr-aviso' : 'herr-nota'}">${a.tipo === 'mal' ? icono('alerta', 18) : ''}<span>${esc(a.texto)}</span></li>`).join('')}</ul>` : '';
 
     const yaEsta = variantes.some((v) => firma(v) === firma(S) && v.slots.join() === S.slots.join());
@@ -209,7 +234,8 @@ export async function render(cont, _perfil, ctx) {
   /* ---------- variantes ---------- */
   function cargarVariantes() {
     const v = guardado.leer(VARS, []);
-    return Array.isArray(v) ? v.filter((x) => x && Array.isArray(x.slots) && x.slots.length === 4 && DISTS[x.tipo]).slice(0, MAX_VAR) : [];
+    return Array.isArray(v) ? v.filter((x) => x && Array.isArray(x.slots) && x.slots.length === 4 && DISTS[x.tipo]).slice(0, MAX_VAR)
+      .map((x) => ({ ...x, cat: CATS.some((c) => c.valor === x.cat) ? x.cat : 'todas', chicos: x.chicos === true })) : [];
   }
   function guardarVariantes() { guardado.poner(VARS, variantes); }
   $('#po-guardar').addEventListener('click', () => {
@@ -217,7 +243,7 @@ export async function render(cont, _perfil, ctx) {
     if (variantes.some((v) => firma(v) === firma(S) && v.slots.join() === S.slots.join())) { decir('Esa combinación ya está guardada.'); return; }
     if (variantes.length >= MAX_VAR) { decir(`Ya tienes ${MAX_VAR} variantes guardadas. Quita una para guardar otra.`); aviso(`Ya tienes ${MAX_VAR} variantes guardadas. Quita una para guardar otra.`); return; }
     const letra = LETRAS.find((l) => !variantes.some((v) => v.letra === l));
-    variantes.push({ letra, rama: S.rama, tipo: S.tipo, dist: S.dist, pool: S.pool, modo: S.modo, slots: S.slots.slice() });
+    variantes.push({ letra, rama: S.rama, tipo: S.tipo, dist: S.dist, pool: S.pool, modo: S.modo, cat: S.cat, chicos: S.chicos, slots: S.slots.slice() });
     variantes.sort((a, b) => a.letra.localeCompare(b.letra));
     guardarVariantes();
     decir(`Variante ${letra} guardada.`);
@@ -242,25 +268,25 @@ export async function render(cont, _perfil, ctx) {
       else if (comparables < 2) pie = '<span class="po-dif-t">No hay otra variante igual para comparar</span>';
       else if (R.suma - mejor < 0.005) pie = '<span class="tag cmp-lider">La más rápida</span>';
       else pie = `<span class="cmp-dif">${textoDif(R.suma - mejor, fmtTiempo)}</span> <span class="po-dif-t">más lenta que la mejor</span>`;
-      const cfgTxt = `${RAMAS[v.rama]} · 4 × ${v.dist} m ${v.tipo} · ${v.pool} m · ${v.modo === 'anio' ? 'último año' : 'mejor marca'}`;
+      const cfgTxt = `${RAMAS[v.rama]} · 4 × ${v.dist} m ${v.tipo} · ${v.pool} m · ${v.modo === 'anio' ? 'último año' : 'mejor marca'}${v.cat && v.cat !== 'todas' ? ` · categoría ${catEtiqueta(v.cat)}${v.chicos ? ' y más chicos' : ''}` : ''}`;
       const cuerpo = R.filas.map((f) => `<li><span class="po-v-n">${f.i + 1}</span><span class="po-v-nom">${f.n ? esc(f.n.nombre) : '<span class="herr-ayuda">Sin elegir</span>'}${v.tipo === 'combinado' ? ` <span class="po-v-est">${esc(ESTILOS_POSTA[f.i])}</span>` : ''}</span><span class="po-v-t ${f.n && !f.m ? 'po-sin' : ''}">${f.n ? (f.m ? fmtTiempo(f.m.s) : 'Sin marca') : '–'}</span></li>`).join('');
-      const avs = avisosRama(v.slots, v.rama).filter((a) => a.tipo === 'mal');
+      const avs = avisosTodos(v.slots, v).filter((a) => a.tipo === 'mal');
       return `<article class="po-var ${R.completo && comparables > 1 && R.suma - mejor < 0.005 ? 'po-var-mejor' : ''}" aria-label="Variante ${esc(v.letra)}">
         <header><h4 class="po-var-h">Variante ${esc(v.letra)}</h4><p class="po-var-cfg">${esc(cfgTxt)}</p></header>
         <ul class="po-var-lista">${cuerpo}</ul>
         <p class="po-var-total"><span class="label">Total</span><span class="po-var-tn">${R.completo ? fmtTiempo(R.suma) : '—'}</span></p>
         <p class="po-var-pie">${pie}</p>
-        ${avs.length ? `<p class="herr-aviso po-var-av">${icono('alerta', 18)}<span>${esc(avs[0].texto)}</span></p>` : ''}
+        ${avs.length ? `<p class="herr-aviso po-var-av">${icono('alerta', 18)}<span>${esc(avs[0].texto)}${avs.length > 1 ? ` (y ${avs.length - 1} ${plural(avs.length - 1, 'aviso más', 'avisos más')})` : ''}</span></p>` : ''}
         <div class="po-var-botones"><button type="button" class="btn btn-sec" data-usar="${esc(v.letra)}">Usar esta</button><button type="button" class="btn btn-sec" data-borrar="${esc(v.letra)}">Quitar</button></div>
       </article>`;
     }).join('');
-    hVars.innerHTML = `${cab}<div class="po-vars">${tarjetas}</div><p class="herr-nota">La diferencia solo se calcula entre variantes de la misma rama, prueba, piscina y tipo de marca. Se guardan en este navegador (solo los nadadores elegidos, no sus datos).</p>`;
+    hVars.innerHTML = `${cab}<div class="po-vars">${tarjetas}</div><p class="herr-nota">La diferencia solo se calcula entre variantes de la misma rama, prueba, piscina, categoría y tipo de marca. Se guardan en este navegador (solo los nadadores elegidos, no sus datos).</p>`;
   }
   hVars.addEventListener('click', (e) => {
     const u = e.target.closest('[data-usar]'), d = e.target.closest('[data-borrar]');
     if (u) {
       const v = variantes.find((x) => x.letra === u.dataset.usar); if (!v) return;
-      Object.assign(S, { rama: v.rama, tipo: v.tipo, dist: v.dist, pool: v.pool, modo: v.modo, slots: v.slots.map((id) => (porId.has(id) ? id : null)) });
+      Object.assign(S, { rama: v.rama, tipo: v.tipo, dist: v.dist, pool: v.pool, modo: v.modo, cat: v.cat || 'todas', chicos: v.chicos === true, slots: v.slots.map((id) => (porId.has(id) ? id : null)) });
       guardarPref();
       decir(`Variante ${v.letra} cargada en el equipo. Los controles de arriba se actualizaron.`);
       sincronizarControles(); pintar();
@@ -271,8 +297,9 @@ export async function render(cont, _perfil, ctx) {
   });
   /* ---------- sugerir la más rápida ---------- */
   $('#po-sugerir').addEventListener('click', () => {
-    const elegible = (n) => (S.rama === 'X' ? !!n.sexo : ramaOk(n.sexo));
+    const elegible = (n) => (S.rama === 'X' ? !!n.sexo : ramaOk(n.sexo)) && enCategoria(n, S.cat, S.chicos);
     const pool = lista.filter(elegible);
+    if (S.cat !== 'todas' && !pool.length) { decir(`Nadie entra en la categoría ${catEtiqueta(S.cat)} con estos filtros. Cambia la categoría o marca “Incluir nadadores más chicos”.`); aviso('Nadie entra en esta categoría con estos filtros.'); return; }
     if (S.rama === 'X' && !pool.length) { decir('No se puede sugerir una posta mixta: todavía no está anotado si los nadadores son mujeres u hombres.'); aviso('Falta anotar si los nadadores son mujeres u hombres para sugerir una posta mixta.'); return; }
     // candidatos por tramo: los 8 más rápidos de cada sexo (con 4 casilleros, con 8 basta para hallar el óptimo exacto)
     const cand = [0, 1, 2, 3].map((i) => {
@@ -296,7 +323,7 @@ export async function render(cont, _perfil, ctx) {
       elegidos[i] = null;
       bt(i + 1, costo + SIN);   // dejar el casillero vacío solo si no alcanza la gente con marca
     })(0, 0);
-    if (!mejor.ids || mejor.ids.every((x) => !x)) { decir('Nadie tiene marca en esta prueba con los filtros elegidos. Prueba con otra piscina, otro tipo de marca o otra distancia.'); aviso('Nadie tiene marca en esta prueba con estos filtros.'); return; }
+    if (!mejor.ids || mejor.ids.every((x) => !x)) { decir('Nadie tiene marca en esta prueba con los filtros elegidos. Prueba con otra piscina, otro tipo de marca, otra distancia u otra categoría.'); aviso('Nadie tiene marca en esta prueba con estos filtros.'); return; }
     let ids = mejor.ids;
     if (S.tipo === 'libre') {
       const t = (id) => (id ? marcaDe(id, 0).s : Infinity);
@@ -327,7 +354,7 @@ export async function render(cont, _perfil, ctx) {
   }
   function abrirSelector(i, disparador) {
     cerrarSelector(false);
-    const ST = { q: '', grupo: 'todos', todas: false };
+    const ST = { q: '', grupo: 'todos', todas: false, todasCat: false };
     const actual = S.slots[i];
     const mActualTxt = !!(actual && marcaDe(actual, i));
     const nodo = el(`
@@ -355,21 +382,23 @@ export async function render(cont, _perfil, ctx) {
     function pintarChips() {
       nodo.querySelector('[data-grupos]').innerHTML = [['todos', 'Todos los grupos'], ...grupos.map((g) => [g, g])].map(([v, t]) => `<button type="button" class="chip" data-g="${esc(v)}" aria-pressed="${ST.grupo === v}">${esc(t)}</button>`).join('');
       const r = nodo.querySelector('[data-ramas]');
-      r.innerHTML = S.rama === 'X' ? '' : `<button type="button" class="chip chip-toggle" data-todas aria-pressed="${!ST.todas}">Solo ${RAMAS[S.rama].toLowerCase()}</button>`;
+      r.innerHTML = (S.rama === 'X' ? '' : `<button type="button" class="chip chip-toggle" data-todas aria-pressed="${!ST.todas}">Solo ${RAMAS[S.rama].toLowerCase()}</button>`)
+        + (S.cat === 'todas' ? '' : `<button type="button" class="chip chip-toggle" data-todascat aria-pressed="${!ST.todasCat}">Solo categoría ${esc(catEtiqueta(S.cat))}${S.chicos ? ' y más chicos' : ''}</button>`);
     }
     function pintarLista() {
       const nq = normalizar(ST.q);
-      let f = lista.filter((n) => (ST.grupo === 'todos' || n.grupo === ST.grupo) && (!nq || normalizar(n.nombre + ' ' + (n.perfil.nombre || '')).includes(nq)) && (ST.todas || ramaOk(n.sexo)));
+      let f = lista.filter((n) => (ST.grupo === 'todos' || n.grupo === ST.grupo) && (!nq || normalizar(n.nombre + ' ' + (n.perfil.nombre || '')).includes(nq)) && (ST.todas || ramaOk(n.sexo)) && (ST.todasCat || enCategoria(n, S.cat, S.chicos)));
       const dato = f.map((n) => ({ n, m: marcaDe(n.id, i) }));
       dato.sort((a, b) => (!a.n.sexo - !b.n.sexo) || (a.m && b.m ? a.m.s - b.m.s : a.m ? -1 : b.m ? 1 : a.n.nombre.localeCompare(b.n.nombre, 'es')));
       let html = actual ? `<li><button type="button" class="po-fila po-fila-quitar" data-quitar>${icono('cerrar', 20)}<span>Dejar el casillero vacío</span></button></li>` : '';
-      if (!dato.length) html += `<li class="herr-ayuda herr-pad">Nadie coincide. Cambia la búsqueda o el grupo${S.rama !== 'X' && !ST.todas ? ', o muestra todas las ramas' : ''}.</li>`;
+      if (!dato.length) html += `<li class="herr-ayuda herr-pad">Nadie coincide. Cambia la búsqueda o el grupo${S.rama !== 'X' && !ST.todas ? ', o muestra todas las ramas' : ''}${S.cat !== 'todas' && !ST.todasCat ? ', o muestra todas las categorías' : ''}.</li>`;
       let sinMarcaPuesto = false, sinSexoPuesto = false;
       html += dato.map(({ n, m }) => {
         const usadoEn = enSlot.get(n.id);
         const bloq = usadoEn != null && usadoEn !== i;
         const esActual = n.id === actual;
         const malRama = !ramaOk(n.sexo);
+        const malCat = !enCategoria(n, S.cat, S.chicos);
         let der = '';
         if (m) {
           der = `<span class="po-fila-t">${fmtTiempo(m.s)}</span>`;
@@ -382,7 +411,7 @@ export async function render(cont, _perfil, ctx) {
         return `${sep}<li><button type="button" class="po-fila" data-id="${esc(n.id)}" ${esActual ? 'aria-current="true"' : ''} ${bloq ? 'aria-disabled="true"' : ''}>
           ${avatar(iniciales(n.nombre), 36)}
           <span class="po-fila-txt"><span class="po-fila-n">${esc(n.nombre)}</span>
-            <span class="po-fila-s">${esc(n.grupo)} · ${n.sexo ? SEXO_TXT[n.sexo] : 'falta anotar si es mujer u hombre'}${bloq ? ` · ya está en la posta ${usadoEn + 1}` : ''}${esActual ? ' · está aquí ahora' : ''}${malRama ? ' · otra rama' : ''}</span></span>
+            <span class="po-fila-s">${esc(n.grupo)} · ${esc(textoCategoria(n))} · ${n.sexo ? SEXO_TXT[n.sexo] : 'falta anotar si es mujer u hombre'}${bloq ? ` · ya está en la posta ${usadoEn + 1}` : ''}${esActual ? ' · está aquí ahora' : ''}${malRama ? ' · otra rama' : ''}${malCat ? ' · otra categoría' : ''}</span></span>
           <span class="po-fila-der">${der}</span></button></li>`;
       }).join('');
       hL.innerHTML = html;
@@ -394,6 +423,7 @@ export async function render(cont, _perfil, ctx) {
       const g = e.target.closest('[data-g]');
       if (g) { ST.grupo = g.dataset.g; pintarChips(); pintarLista(); return; }
       if (e.target.closest('[data-todas]')) { ST.todas = !ST.todas; pintarChips(); pintarLista(); return; }
+      if (e.target.closest('[data-todascat]')) { ST.todasCat = !ST.todasCat; pintarChips(); pintarLista(); return; }
       if (e.target.closest('[data-quitar]')) { S.slots[i] = null; cerrarSelector(); decir(''); pintar(); return; }
       const b = e.target.closest('.po-fila[data-id]');
       if (!b) return;
