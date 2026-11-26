@@ -332,7 +332,7 @@ function primerNombre() {
 /** Activa la huella o cara en ESTE celular. Pide la clave actual (en nadadores y profesores): crea la passkey, envuelve K con la salida PRF (ranura pk)
  *  y sube el llavero. Agregar un celular NO rota K: las huellas de los demás celulares se conservan. Si el llavero venía de v1 (copias viejas) se pasa a v2
  *  con K nueva. Profesores: además la llave pública va a la nube (/pk/registro, que vuelve a comprobar la clave actual, en la misma operación). */
-export async function activarHuella(nombre, claveActual) {
+export async function activarHuella(nombre, claveActual, { pedirToque = null } = {}) {
   if (!bajoPuerta() || !actual || !llave) throw new ErrorCambio('Esto solo funciona dentro del portal del club.');
   nombre = String(nombre || '').trim().slice(0, 40) || nombreCelularSugerido();
   const H = await import('./huella.js');
@@ -345,27 +345,36 @@ export async function activarHuella(nombre, claveActual) {
   const previas = doc.v === 2 ? doc.ranuras.filter((r) => r.t === 'pk') : [];
   if (previas.length >= 8) throw new ErrorCambio('Ya hay muchos celulares con huella. Quita alguno antes de activar otro.');
   let c;
-  try { c = await H.crear({ h, name: 'Club Náutico', displayName: `${primerNombre()} · Club Náutico`, excluir: previas.map((r) => L.b64uAbytes(r.cred)) }); }
+  try { c = await H.crear({ h, name: 'Club Náutico', displayName: `${primerNombre()} · Club Náutico`, excluir: previas.map((r) => L.b64uAbytes(r.cred)), pedirToque }); }
   catch (e) { throw new ErrorCambio(e instanceof H.ErrorHuella ? e.message : 'No se pudo usar la huella en este celular. Sigue con tu clave.'); }
-  const llaveH = await L.llaveDeHuella(c.prf, c.credId);
-  const credB64u = L.bytesAb64u(c.credId);
-  const celulares = [...(Array.isArray(contenido.celulares) ? contenido.celulares : []).filter((x) => x && x.cred !== credB64u), { cred: credB64u, nombre, creado: Date.now() }];
-  const contenidoNuevo = { ...contenido, celulares };
-  let kNueva = k, ranuras = doc.v === 2 ? doc.ranuras : [], base = null;
-  if (doc.v === 1) { const m = await L.migrarV1(doc, k, contenidoNuevo); kNueva = m.k; ranuras = m.doc.ranuras; base = m.doc; }
-  const slot = await L.ranuraPk(c.credId, llaveH, kNueva);
-  ranuras = [...ranuras.filter((r) => !(r.t === 'pk' && r.cred === slot.cred)), slot];
-  if (ranuras.length > 10) throw new ErrorCambio('Ya hay muchos celulares con huella. Quita alguno antes de activar otro.');
-  const nuevo = base ? { ...base, ranuras } : await L.conContenido(doc, kNueva, contenidoNuevo, ranuras);
-  const token = await L.tokenDe(k);
-  const r = esProfe
-    ? await enviar('/pk/registro', { cred: slot.cred, pub: C.bytesAb64(c.spki), alg: c.alg, actual: String(claveActual), llavero: { h, token, doc: nuevo }, prev, ...(doc.v === 1 ? { pk: C.bytesAb64(kNueva) } : {}) })
-    : await enviar('/portal/api/llavero', { h, token, llavero: nuevo, prev });
-  if (r.status === 409 && r.j.error !== 'otro cambio ganó, recarga') throw new ErrorCambio('Ya hay muchos celulares con huella. Quita alguno antes de activar otro.');
-  if (r.status !== 200 || !r.j.ok) throw falloCambio(r);
-  guardaLlaveNueva(esProfe, h, kNueva);
-  cache.clear(); promesas.clear();
-  return { nombre };
+  // Desde aquí la passkey ya existe en el celular: si algo falla, queda huérfana. Se manda un diagnóstico anónimo (/pk/diag) y se le pide al celular que la borre.
+  let info = null;
+  try {
+    const llaveH = await L.llaveDeHuella(c.prf, c.credId);
+    const credB64u = L.bytesAb64u(c.credId);
+    const celulares = [...(Array.isArray(contenido.celulares) ? contenido.celulares : []).filter((x) => x && x.cred !== credB64u), { cred: credB64u, nombre, creado: Date.now() }];
+    const contenidoNuevo = { ...contenido, celulares };
+    let kNueva = k, ranuras = doc.v === 2 ? doc.ranuras : [], base = null;
+    if (doc.v === 1) { const m = await L.migrarV1(doc, k, contenidoNuevo); kNueva = m.k; ranuras = m.doc.ranuras; base = m.doc; }
+    const slot = await L.ranuraPk(c.credId, llaveH, kNueva);
+    ranuras = [...ranuras.filter((r) => !(r.t === 'pk' && r.cred === slot.cred)), slot];
+    if (ranuras.length > 10) throw new ErrorCambio('Ya hay muchos celulares con huella. Quita alguno antes de activar otro.');
+    const nuevo = base ? { ...base, ranuras } : await L.conContenido(doc, kNueva, contenidoNuevo, ranuras);
+    const token = await L.tokenDe(k);
+    const r = esProfe
+      ? await enviar('/pk/registro', { cred: slot.cred, pub: C.bytesAb64(c.spki), alg: c.alg, actual: String(claveActual), llavero: { h, token, doc: nuevo }, prev, ...(doc.v === 1 ? { pk: C.bytesAb64(kNueva) } : {}) })
+      : await enviar('/portal/api/llavero', { h, token, llavero: nuevo, prev });
+    if (r.status !== 200 || !r.j.ok) info = { name: 'HTTP', message: r.status + ' ' + String(r.j.error || '') };
+    if (r.status === 409 && r.j.error !== 'otro cambio ganó, recarga') throw new ErrorCambio('Ya hay muchos celulares con huella. Quita alguno antes de activar otro.');
+    if (r.status !== 200 || !r.j.ok) throw falloCambio(r);
+    guardaLlaveNueva(esProfe, h, kNueva);
+    cache.clear(); promesas.clear();
+    return { nombre };
+  } catch (e) {
+    H.diag('subir', info || e);
+    await H.avisarQuitada(c.credId);
+    throw e;
+  }
 }
 
 /** Quita un celular de "Mis celulares con huella". Pide la clave actual y, POR SEGURIDAD, rota la llave maestra: se genera una K' nueva, el llavero queda

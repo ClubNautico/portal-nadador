@@ -11,6 +11,7 @@
 .clave-acciones { display: grid; gap: 10px; }
 .clave-acciones.fila { grid-template-columns: 1fr 1fr; }
 .clave-error { color: var(--bad); font-size: var(--fs-small); line-height: 1.4; }
+.clave-caja .clave-error:not([hidden]) { padding: 10px 12px; border: 1px solid var(--bad); border-radius: 12px; }
 .clave-error[hidden], .clave-caja [hidden] { display: none; }
 .clave-nota { font-size: var(--fs-small); color: var(--text-3); }
 .clave-caja .campo input[type="password"] { letter-spacing: .06em; }

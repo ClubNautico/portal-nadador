@@ -180,6 +180,9 @@ export async function abrirHuella() {
       <input id="hu-nombre" type="text" maxlength="40" autocomplete="off" spellcheck="false"></div>
     <p class="clave-error" role="alert" data-error hidden></p>
     <p class="clave-ok" role="status" data-listo hidden></p>
+    <div class="clave-acciones" data-toque hidden>
+      <p class="clave-nota">Casi listo: el celular pide un toque más para terminar.</p>
+      <button type="button" class="btn btn-primario" data-toque-btn>Tocar de nuevo para terminar</button></div>
     <div class="clave-acciones"><button type="button" class="btn btn-primario" data-activar>Activar en este celular</button></div>
     <h3 class="huella-sub">Mis celulares con huella</h3>
     <p class="clave-nota" data-aviso hidden>Por seguridad, quitar un celular desactiva la huella en todos tus celulares: tendrás que activarla otra vez en los que sigas usando.</p>
@@ -190,7 +193,14 @@ export async function abrirHuella() {
   const err = q('[data-error]'), listo = q('[data-listo]'), lista = q('[data-lista]'), activar = q('[data-activar]'), aviso = q('[data-aviso]');
   q('#hu-nombre').value = Sesion.nombreCelularSugerido();
   q('[data-cerrar]').addEventListener('click', cerrarCuadro);
-  const error = (m) => { err.textContent = m; err.hidden = !m; };
+  const mira = (el) => { try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch { try { el.scrollIntoView(); } catch {} } };   // que el aviso no quede tapado por la barra del navegador
+  const error = (m) => { err.textContent = m; err.hidden = !m; if (m) mira(err); };
+  const toque = q('[data-toque]'), toqueBtn = q('[data-toque-btn]');
+  // WebKit (iPhone) exige un toque nuevo para la segunda huella: se muestra un botón y la huella se pide DENTRO de su clic
+  const pedirToque = (accion) => new Promise((ok, mal) => {
+    toque.hidden = false; mira(toque);
+    toqueBtn.onclick = () => { toque.hidden = true; accion().then(ok, mal); };
+  });
 
   async function pintaLista() {
     let items = [];
@@ -225,10 +235,10 @@ export async function abrirHuella() {
     activar.disabled = true; error(''); listo.hidden = true;
     const t0 = activar.textContent; activar.textContent = 'Esperando tu huella…';
     try {
-      await Sesion.activarHuella(q('#hu-nombre').value, q('#hu-clave').value);
-      listo.textContent = 'Listo. La próxima vez toca «Entrar con huella o cara» en la pantalla de entrada.'; listo.hidden = false;
+      await Sesion.activarHuella(q('#hu-nombre').value, q('#hu-clave').value, { pedirToque });
+      listo.textContent = 'Listo. La próxima vez toca «Entrar con huella o cara» en la pantalla de entrada.'; listo.hidden = false; mira(listo);
     } catch (ex) { error(ex instanceof Sesion.ErrorCambio ? ex.message : 'No se pudo activar. Intenta de nuevo.'); }
-    activar.disabled = false; activar.textContent = t0;
+    toque.hidden = true; activar.disabled = false; activar.textContent = t0;
     pintaLista();
   });
   pintaLista();
