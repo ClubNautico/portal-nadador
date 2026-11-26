@@ -196,9 +196,14 @@ export function render(cont, p, ctx) {
       ? `Progresión de tus tests de ${nombre} (bajar el tiempo es mejorar): de ${hora(primero)} el ${fechaTxt(primero.f, primero.aprox)} a ${hora(ult)} el ${fechaTxt(ult.f, ult.aprox)}.${comp ? ` Tu mejor en competencia es ${comp.t || fmtTiempo(comp.s)}.` : ''}`
       : `Test de ${nombre}: ${hora(ult)} el ${fechaTxt(ult.f, ult.aprox)}.`;
     const opts = { ariaLabel: desc, series: series(pr), activo: `t-${pr.tests.length - 1}` };
-    if (!grafico) grafico = crearGraficoProgresion($('#ag-g'), opts);
-    else grafico.update(opts, { anim: !primeraVez || anim });
-    primeraVez = false;
+    // Con un solo test y sin marca de competencia que comparar, el gráfico sería un punto suelto: se oculta.
+    const hayGrafico = pr.tests.length >= 2 || !!comp;
+    $('.ag-graf').hidden = !hayGrafico;
+    if (hayGrafico) {
+      if (!grafico) grafico = crearGraficoProgresion($('#ag-g'), opts);
+      else grafico.update(opts, { anim: !primeraVez || anim });
+      primeraVez = false;
+    }
   }
 
   /* ---------------------------- tarjetas ---------------------------- */
@@ -242,8 +247,7 @@ export function render(cont, p, ctx) {
       brV = '<p class="metrica-v num sin">–</p>';
       brS = `<p class="metrica-s">No contaron brazadas en el último test. La última vez: ${l.br} (${esc(fechaTxt(l.f, l.aprox))}).</p>`;
     } else {
-      brV = '<p class="metrica-v num sin">–</p>';
-      brS = '<p class="metrica-s">Aún no hay brazadas registradas en esta prueba.</p>';
+      brV = '';   // sin brazadas en esta prueba: no se muestra la tarjeta
     }
 
     const dif = ultimo.s - mejor.s;
@@ -260,12 +264,12 @@ export function render(cont, p, ctx) {
             <p class="metrica-s">${esc(fechaTxt(ultimo.f, ultimo.aprox))}</p>
             ${prev ? `<p class="metrica-s">${variacion(prev.s - ultimo.s)} vs. test anterior (${esc(hora(prev))})</p>` : '<p class="metrica-s">Primer test de esta prueba</p>'}
           </div>
-          <div class="metrica"><p class="label">Frente a tu mejor</p>
-            ${unico || esMejor
-              ? `<p class="metrica-v num ok">${unico ? '–' : '= mejor'}</p><p class="metrica-s">${unico ? 'Con tu próximo test verás el cambio' : 'Tu último test es tu mejor marca de entrenamiento'}</p>`
+          ${unico ? '' : `<div class="metrica"><p class="label">Frente a tu mejor</p>
+            ${esMejor
+              ? `<p class="metrica-v num ok">= mejor</p><p class="metrica-s">Tu último test es tu mejor marca de entrenamiento</p>`
               : `<p class="metrica-v num"><span aria-hidden="true">▲ +</span><span class="sr-only">Subió </span>${esc(fmtDelta(dif))}<span class="u"> s</span></p><p class="metrica-s">por encima de tu mejor test</p>`}
-          </div>
-          <div class="metrica"><p class="label">Brazadas del último</p>${brV}${brS}</div>
+          </div>`}
+          ${brV ? `<div class="metrica"><p class="label">Brazadas del último</p>${brV}${brS}</div>` : ''}
         </div>
       </div>`;
     const h = $('#ag-stats .hero-tiempo');

@@ -4,7 +4,7 @@ import { el, chipRP, notaRP, variacion, animarTiempo, vacio } from '../ui.js';
 import { avatar } from '../ui.js';
 import { sparkline } from '../graficos.js';
 import { esc, iniciales, fechaCorta, fechaMes, mesLargo, ordinal, nombreLimpio, plural, tituloEvento, fmtTiempo, fmtDelta, nombreCorto } from '../formato.js';
-import { ultimosRP, pruebaMasNadada, ultimoPor } from '../datos.js';
+import { ultimosRP, pruebaMasNadada, ultimoPor, tieneTecnica, tieneFuerza } from '../datos.js';
 
 const ANIO = new Date().getFullYear();
 
@@ -22,13 +22,13 @@ function resumenTests(p, ctx) {
   let fz = { dato: 'Aún sin tests', sub: 'Se mostrarán aquí' };
   if (rm && (!tf || (rm.f || '') >= (tf.f || ''))) fz = { dato: `${tituloEvento(rm.ej)} · ${rm.v ?? '–'} ${String(rm.u || '').toLowerCase()}`, sub: `1RM del ${rm.f ? fechaCorta(rm.f) : 'registro'}` };
   else if (tf) fz = { dato: `${tf.b ?? 'Test'}: ${tf.t ?? '–'}`, sub: `Último test: ${tf.f ? fechaCorta(tf.f) : 'sin fecha'}` };
-  out.push({ v: 'fuerza', ico: 'fuerza', titulo: 'Fuerza', ...fz });
+  out.push({ v: 'fuerza', ico: 'fuerza', titulo: 'Fuerza', ...fz, pronto: !tieneFuerza(p) });
   // Cuerpo
   const an = ultimoPor(p.antropometria);
   out.push({ v: 'cuerpo', ico: 'cuerpo', titulo: 'Cuerpo', dato: an ? [an.peso != null ? `${an.peso} kg` : null, an.talla != null ? `${an.talla} cm` : null].filter(Boolean).join(' · ') || 'Medición registrada' : 'Aún sin mediciones', sub: an ? `Medido el ${fechaCorta(an.f)}` : '' });
   // Técnica
   const ev = ultimoPor(p.tecnica?.evals);
-  out.push({ v: 'tecnica', ico: 'tecnica', titulo: 'Técnica', dato: ev ? (ev.est ? `Evaluación de ${String(ev.est).toLowerCase()}` : 'Evaluación registrada') : 'Aún sin evaluaciones', sub: ev && ev.f ? fechaCorta(ev.f) : '' });
+  out.push({ v: 'tecnica', ico: 'tecnica', titulo: 'Técnica', dato: ev ? (ev.est ? `Evaluación de ${String(ev.est).toLowerCase()}` : 'Evaluación registrada') : 'Aún sin evaluaciones', sub: ev && ev.f ? fechaCorta(ev.f) : '', pronto: !tieneTecnica(p) });
   // Asistencia
   const as = (p.asistencia || []).filter((a) => a.pct != null);
   let ultMes = as.length ? as.reduce((m, a) => (a.mes > m ? a.mes : m), '') : null;
@@ -81,7 +81,7 @@ export function render(cont, p, ctx) {
           ${m.delta != null && m.delta > 0 ? variacion(m.delta, { largo: true, sufijo: ' respecto a tu mejor marca anterior' }) : ''}
         </div>
         <p class="hero-sub">${esc(fechaCorta(m.f))} · ${esc(tituloEvento(m.ev))}</p>
-        <div class="hero-spark">${sparkline(valores, { fluido: true, alto: 64, ancho: 320, clase: 'spark-grande', etiqueta: `Últimas ${valores.length} marcas de ${principal.dist} m ${principal.est}, de la más antigua a la más reciente: ${valores.map(fmtTiempo).join(', ')}. La línea baja cuando mejoras` })}<p class="hero-spark-cap">Últimas ${valores.length} ${plural(valores.length, 'marca', 'marcas')} · ${principal.marcas.length} en total</p></div>
+        ${valores.length >= 2 ? `<div class="hero-spark">${sparkline(valores, { fluido: true, alto: 64, ancho: 320, clase: 'spark-grande', etiqueta: `Últimas ${valores.length} marcas de ${principal.dist} m ${principal.est}, de la más antigua a la más reciente: ${valores.map(fmtTiempo).join(', ')}. La línea baja cuando mejoras` })}<p class="hero-spark-cap">Últimas ${valores.length} ${plural(valores.length, 'marca', 'marcas')} · ${principal.marcas.length} en total</p></div>` : ''}
         <button type="button" class="btn btn-sec hero-ver" data-ver>Ver progresión ${icono('chev-der', 18)}</button>
       </section>`;
   }
@@ -113,10 +113,10 @@ export function render(cont, p, ctx) {
   }
 
   const accesos = resumenTests(p, ctx).map((a) => `
-    <a class="acceso" href="${ctx.hrefVista(a.v)}">
+    <a class="acceso${a.pronto ? ' acceso-pronto' : ''}" href="${ctx.hrefVista(a.v)}">
       <span class="acceso-ico">${icono(a.ico, 22)}</span>
       <span class="acceso-txt"><span class="acceso-tit">${esc(a.titulo)}</span><span class="acceso-dato">${esc(a.dato)}</span>${a.sub ? `<span class="acceso-sub">${esc(a.sub)}</span>` : ''}</span>
-      ${icono('chev-der', 18, 'acceso-flecha')}
+      ${a.pronto ? '<span class="tag tag-pronto">Pronto</span>' : ''}${icono('chev-der', 18, 'acceso-flecha')}
     </a>`).join('');
 
   cont.innerHTML = `

@@ -212,6 +212,16 @@ export async function render(cont, _perfil, ctx) {
     }
     // avisos de rama
     const av = avisosTodos(S.slots, S);
+    // aviso (sin bloquear) cuando el equipo mezcla categorías de edad
+    const porCat = new Map();
+    for (const id of S.slots) {
+      const n = id && porId.get(id); if (!n) continue;
+      const k = n.cat ? catEtiqueta(n.cat) : n.menor ? 'menor de 9' : null;
+      if (!k) continue;
+      if (!porCat.has(k)) porCat.set(k, []);
+      porCat.get(k).push(n.nombre);
+    }
+    if (porCat.size > 1) av.push({ tipo: 'nota', texto: `Este equipo mezcla categorías: ${[...porCat].map(([k, ns]) => `${k} (${ns.join(', ')})`).join(' · ')}. Puedes seguir así; es solo un aviso.` });
     hAvisos.innerHTML = av.length ? `<ul class="po-avisos">${av.map((a) => `<li class="${a.tipo === 'mal' ? 'herr-aviso' : 'herr-nota'}">${a.tipo === 'mal' ? icono('alerta', 18) : ''}<span>${esc(a.texto)}</span></li>`).join('')}</ul>` : '';
 
     const yaEsta = variantes.some((v) => firma(v) === firma(S) && v.slots.join() === S.slots.join());

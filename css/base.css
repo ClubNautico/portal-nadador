@@ -103,6 +103,8 @@ body.con-viewbar { --sticky-top: var(--viewbar-h); }
 
 /* Estado de arranque */
 .arranque { min-height: 100dvh; display: grid; place-items: center; }
+.arranque-caja { display: grid; justify-items: center; gap: 14px; }
+.arranque-txt { margin: 0; color: var(--text-2, var(--text)); font-size: 15px; }
 .arranque-pulso { width: 40px; height: 2px; background: var(--accent); border-radius: 2px; animation: pulso 1s var(--ease-in-out) infinite alternate; }
 @keyframes pulso { from { opacity: .25; transform: scaleX(.4); } to { opacity: 1; transform: scaleX(1); } }
 

@@ -223,7 +223,7 @@ function montarShell() {
             ${Sesion.bajoPuerta() ? '' : '<a class="vb-cambiar" data-volver-panel href="/" aria-label="Portada del club">&lsaquo; Portada</a>'}
             <p class="top-titulo" data-slot="titulo"></p>
           </div>
-          <div style="display:flex;gap:4px">${Sesion.bajoPuerta() ? `<a class="icon-btn" href="/" aria-label="Volver al Panel del profesor">${icono('inicio', 22)}</a>` : ''}
+          <div style="display:flex;gap:4px">${Sesion.bajoPuerta() ? `<a class="vb-cambiar" href="/" aria-label="Volver al Panel del profesor">&lsaquo; Panel</a>` : ''}
           <button type="button" class="icon-btn" data-accion="tema"></button></div>
         </header>
         <div class="viewbar" data-slot="viewbar" hidden></div>
@@ -314,7 +314,7 @@ function montarLogin(mensaje = '') {
 addEventListener('hashchange', () => { if (sesion) ruta(); });
 
 (async function arrancar() {
-  raiz.replaceChildren(el('<div class="arranque" role="status" aria-label="Cargando"><div class="arranque-pulso"></div></div>'));
+  raiz.replaceChildren(el('<div class="arranque" role="status"><div class="arranque-caja"><div class="arranque-pulso"></div><p class="arranque-txt">Abriendo tus datos…</p></div></div>'));
   try {
     sesion = await Sesion.restaurar();
   } catch (e) {

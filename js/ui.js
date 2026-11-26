@@ -58,7 +58,7 @@ export function errorCaja(mensaje, onRetry) {
 export function skeletonVista(tipo = 'general') {
   const filas = Array.from({ length: 4 }, () => '<div class="sk sk-fila"></div>').join('');
   if (tipo === 'grafico') return el(`<div class="sk-wrap" aria-hidden="true"><div class="sk sk-titulo"></div><div class="sk sk-grafico"></div>${filas}</div>`);
-  return el(`<div class="sk-wrap" aria-busy="true"><span class="sr-only" role="status">Cargando tus datos…</span><div class="sk sk-titulo"></div><div class="sk sk-tarjeta"></div><div class="sk sk-tarjeta"></div>${filas}<p class="sk-texto" aria-hidden="true">Cargando tus datos…</p></div>`);
+  return el(`<div class="sk-wrap" aria-busy="true"><span class="sr-only" role="status">Abriendo tus datos…</span><div class="sk sk-titulo"></div><div class="sk sk-tarjeta"></div><div class="sk sk-tarjeta"></div>${filas}<p class="sk-texto" aria-hidden="true">Abriendo tus datos…</p></div>`);
 }
 
 /* ---------- Pista de desplazamiento horizontal ---------- */

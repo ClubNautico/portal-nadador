@@ -102,17 +102,16 @@ export function render(cont, p, ctx) {
     const $ = (s) => caja.querySelector(s);
     let pool = poolIni;
 
-    const poolItems = () => {
-      const d = dispon.get(key) || {};
-      return [
-        { valor: '25', etiqueta: '25 m', deshabilitado: !d['25'] },
-        { valor: '50', etiqueta: '50 m', deshabilitado: !d['50'] },
-        { valor: 'ambas', etiqueta: 'Ambas', deshabilitado: !(d['25'] && d['50']) },
-      ];
-    };
-    const gPool = grupoRadio($('#sel-pool'), {
-      items: poolItems(), valor: pool, aria: 'Piscina', variante: 'seg', onChange: (v) => { pool = v; actualizar(true); },
-    });
+    // La piscina (25 / 50 m) se elige UNA sola vez, arriba, en "Mejores marcas". Aquí solo se ofrece
+    // comparar con la otra piscina, y únicamente si esta prueba tiene marcas en las dos.
+    const dPool = dispon.get(key) || {};
+    const base = poolIni === 'ambas' ? (estado.poolMejores || poolPorDefecto(key)) : poolIni;
+    if (dPool['25'] && dPool['50']) {
+      grupoRadio($('#sel-pool'), {
+        items: [{ valor: base, etiqueta: `Solo piscina de ${base} m` }, { valor: 'ambas', etiqueta: 'Comparar 25 y 50 m' }],
+        valor: pool === 'ambas' ? 'ambas' : base, aria: 'Comparar piscinas', variante: 'seg', onChange: (v) => { pool = v; actualizar(true); },
+      });
+    } else $('.det-pool').hidden = true;
 
     let grafico = null;
     let primera = true;
@@ -142,9 +141,14 @@ export function render(cont, p, ctx) {
         ? `Progresión de ${nombre} (bajar el tiempo es mejorar): de ${pts[0].t} en ${fechaMes(new Date(pts[0].x).toISOString().slice(0, 10))} a ${pts[pts.length - 1].t} en ${fechaMes(new Date(pts[pts.length - 1].x).toISOString().slice(0, 10))}. La lista de marcas debajo contiene los mismos datos`
         : `Progresión de ${nombre}`;
       const opts = { ariaLabel: desc, series: ss.map((s) => s.serie), activo: undefined, onActivo: (pt) => marcarFila(pt.id) };
-      if (!grafico) grafico = crearGraficoProgresion($('#g-host'), opts);
-      else grafico.update(opts, { anim: !primera || anim });
-      primera = false;
+      // Con una sola marca un gráfico no dice nada: se oculta y quedan el tiempo y la lista.
+      const hayGrafico = pts.length >= 2;
+      $('.card-grafico').hidden = !hayGrafico;
+      if (hayGrafico) {
+        if (!grafico) grafico = crearGraficoProgresion($('#g-host'), opts);
+        else grafico.update(opts, { anim: !primera || anim });
+        primera = false;
+      }
       pintarStats(ss);
       pintarLista(ss);
     }
@@ -207,11 +211,11 @@ export function render(cont, p, ctx) {
     $('#p-lista').addEventListener('click', (e) => {
       const b = e.target.closest('.fila-t');
       if (!b) return;
-      grafico.setActive(b.dataset.id);
+      grafico?.setActive(b.dataset.id);
       marcarFila(b.dataset.id);
       const host = $('#g-host');
       const r = host.getBoundingClientRect();
-      if (r.top < 56 || r.bottom > innerHeight) host.scrollIntoView({ block: 'center', behavior: reducirMovimiento() ? 'auto' : 'smooth' });
+      if (grafico && (r.top < 56 || r.bottom > innerHeight)) host.scrollIntoView({ block: 'center', behavior: reducirMovimiento() ? 'auto' : 'smooth' });
     });
 
     actualizar(false);

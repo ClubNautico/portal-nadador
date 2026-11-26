@@ -161,6 +161,15 @@ export function render(cont, p, ctx) {
     sinfecha: sinFecha.length > 0,
   };
 
+  if (!Object.values(hay).some(Boolean)) {
+    cuerpo.append(vacio({
+      titulo: 'Aún no hay tests de fuerza',
+      texto: 'Cuando midan tu 1RM, tus saltos o tu flexibilidad, aquí verás cada medición y cuánto cambió desde la anterior.',
+      icon: 'carril',
+    }));
+    return;
+  }
+
   /* ------------------------- cifras ------------------------- */
   const cifras = `
     <dl class="cifras" aria-label="Resumen de tu fuerza y condición física">
@@ -180,11 +189,11 @@ export function render(cont, p, ctx) {
     { id: 'test', t: 'Test físico' },
     { id: 'flex', t: 'Flexibilidad' },
     { id: 'medidas', t: 'Medidas' },
-    ...(hay.sinfecha ? [{ id: 'sinfecha', t: 'Sin fecha' }] : []),
-  ];
+    { id: 'sinfecha', t: 'Sin fecha' },
+  ].filter((s) => hay[s.id]);
   const nav = `
     <div class="selector fz-selector">
-      <nav aria-label="Secciones de fuerza"><div class="selector-fila fz-nav">${SECCIONES.map((s) => `<button type="button" class="chip" data-sec="${s.id}" ${hay[s.id] ? '' : 'aria-disabled="true"'}>${esc(s.t)}</button>`).join('')}</div></nav>
+      <nav aria-label="Secciones de fuerza"><div class="selector-fila fz-nav">${SECCIONES.map((s) => `<button type="button" class="chip" data-sec="${s.id}">${esc(s.t)}</button>`).join('')}</div></nav>
     </div>`;
 
   cuerpo.innerHTML = `${cifras}${nav}<div class="fz-secciones" id="fz-secs"></div>`;
@@ -200,7 +209,7 @@ export function render(cont, p, ctx) {
   /* ------------------------- 1RM ------------------------- */
   (function () {
     const s = seccion('rm', '1RM · fuerza máxima', hay.rm ? 'Cuánto peso levantas en una sola repetición, ejercicio por ejercicio.' : '');
-    if (!hay.rm) { s.append(vacio({ titulo: 'Aún no hay mediciones de 1RM', texto: 'Cuando midan tu fuerza máxima en pesas, verás cada ejercicio con su evolución.', icon: 'carril' })); return; }
+    if (!hay.rm) { s.remove(); return; }
 
     if (rmGym.size) {
       const grupos = ZONAS.map(([z, nombre]) => ({ nombre, items: [...rmGym].filter(([ej]) => zona(ej) === z).sort((a, b) => a[0].localeCompare(b[0], 'es')) })).filter((g) => g.items.length);
@@ -258,7 +267,7 @@ export function render(cont, p, ctx) {
   /* ------------------------- Saltos ------------------------- */
   (function () {
     const s = seccion('saltos', 'Saltos', hay.saltos ? 'Qué tan alto saltas, cuánto tiempo estás en el aire y con qué velocidad despegas.' : '');
-    if (!hay.saltos) { s.append(vacio({ titulo: 'Aún no hay tests de salto', texto: 'Cuando midan tu salto vertical, verás tu altura, tiempo de vuelo y velocidad.', icon: 'carril' })); return; }
+    if (!hay.saltos) { s.remove(); return; }
     const orden = ['squat jump', 'salto vertical', 'abalakov'];
     const tipos = [...saltosSeries].sort((a, b) => (orden.indexOf(norm(a[0])) + 1 || 99) - (orden.indexOf(norm(b[0])) + 1 || 99));
     html(s, `<div class="fz-saltos">${tipos.map(([tipo, mets]) => {
@@ -288,7 +297,7 @@ export function render(cont, p, ctx) {
   /* ------------------------- Test físico ------------------------- */
   (function () {
     const s = seccion('test', 'Test físico', hay.test ? 'Repeticiones y distancias en cada prueba. Aquí, más es mejor.' : '');
-    if (!hay.test) { s.append(vacio({ titulo: 'Aún no hay tests físicos', texto: 'Abdominales, lumbares, flexiones, sentadillas y saltos aparecerán aquí con su evolución.', icon: 'carril' })); return; }
+    if (!hay.test) { s.remove(); return; }
     const items = [...bl.test].sort((a, b) => ultimaDe(b[1]).f.localeCompare(ultimaDe(a[1]).f) || a[0].localeCompare(b[0], 'es'));
     html(s, `<div class="rejilla-metricas fz-rejilla fz-tests">${items.map(([t, pts]) => {
       const ult = ultimaDe(pts), c = cambioDe(pts);
@@ -317,7 +326,7 @@ export function render(cont, p, ctx) {
   /* ------------------------- Flexibilidad ------------------------- */
   (function () {
     const s = seccion('flex', 'Flexibilidad', hay.flex ? 'Medidas en centímetros. Las flechas solo dicen si el número subió o bajó: qué es mejor depende de cada prueba.' : '');
-    if (!hay.flex) { s.append(vacio({ titulo: 'Aún no hay medidas de flexibilidad', texto: 'Hombro, tobillo e isquiotibiales aparecerán aquí con su evolución.', icon: 'carril' })); return; }
+    if (!hay.flex) { s.remove(); return; }
     const items = [...bl.flex].sort((a, b) => a[0].localeCompare(b[0], 'es'));
     html(s, `<div class="card fz-flex"><ul class="lista-filas">${items.map(([t, pts]) => {
       const ult = ultimaDe(pts), c = cambioDe(pts);
@@ -334,7 +343,7 @@ export function render(cont, p, ctx) {
   /* ------------------------- Medidas y perfil ------------------------- */
   (function () {
     const s = seccion('medidas', 'Medidas y perfil', hay.medidas ? 'Datos de referencia que se toman junto con los tests.' : '');
-    if (!hay.medidas) { s.append(vacio({ titulo: 'Aún no hay medidas en tus tests', texto: 'Peso, estatura, envergadura y especialización aparecerán aquí.', icon: 'carril' })); return; }
+    if (!hay.medidas) { s.remove(); return; }
     const orden = ['peso corporal', 'estatura', 'envergadura'];
     const items = [...bl.medidas].sort((a, b) => (orden.indexOf(norm(a[0])) + 1 || 99) - (orden.indexOf(norm(b[0])) + 1 || 99));
     const perfil = bl.perfil.slice().sort((a, b) => a.f.localeCompare(b.f)).pop();

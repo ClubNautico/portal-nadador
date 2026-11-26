@@ -205,3 +205,9 @@
 .nad-c { font-size: var(--fs-small); color: var(--text-3); }
 
 @media (min-width: 1024px) { .admin-salir { display: none; } }
+
+/* ---------- Opciones sin datos aún ("Pronto") ---------- */
+.acceso-pronto .acceso-ico, .acceso-pronto .acceso-txt { opacity: .62; }
+.tag-pronto { flex: none; background: transparent; border: 1px solid var(--border-strong); color: var(--text-2); }
+/* Tarjetas de mejores marcas: en celular angosto, ancho completo (sin huecos de media pantalla) */
+@media (max-width: 479px) { .mej-rejilla { grid-template-columns: 1fr; } .mej-card { min-height: 0; } }

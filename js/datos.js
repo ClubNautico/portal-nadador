@@ -119,3 +119,12 @@ export function ultimoPor(lista, campo = 'f') {
   for (const x of lista) if (x[campo] && (!m || x[campo] > m[campo])) m = x;
   return m || lista[lista.length - 1];
 }
+
+/** ¿Hay datos de Técnica? (mismo criterio que la vista: evaluaciones con fecha, estilo y al menos una nota). */
+export function tieneTecnica(p) {
+  return (p?.tecnica?.evals || []).some((e) => e && e.f && e.est && ((e.m || 0) + (e.r || 0) + (e.b || 0)) > 0);
+}
+/** ¿Hay datos de Fuerza? (1RM del gimnasio o tests físicos). */
+export function tieneFuerza(p) {
+  return (p?.rm || []).some((r) => r && r.ej) || (p?.testsFisicos || []).some((r) => r && r.t);
+}
