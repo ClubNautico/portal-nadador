@@ -2,6 +2,8 @@
 import { icono } from '../iconos.js';
 import { esc } from '../formato.js';
 import { tieneTecnica, tieneFuerza } from '../datos.js';
+import { bajoPuerta } from '../sesion.js';
+import { abrirClave, botonHuella } from './clave.js';
 
 const ITEMS = [
   { v: 'fuerza', t: 'Fuerza', d: 'Tus tests de fuerza y 1RM' },
@@ -27,10 +29,13 @@ export function render(cont, p, ctx) {
         </a></li></ul>
       <div class="mas-sesion">
         <button type="button" class="btn btn-sec" data-tema>${icono(ctx.temaActual() === 'light' ? 'luna' : 'sol', 20)}<span>${ctx.temaActual() === 'light' ? 'Usar tema oscuro' : 'Usar tema claro'}</span></button>
+        ${bajoPuerta() ? '<button type="button" class="btn btn-sec" data-mi-clave>Cambiar mi clave</button>' : ''}
         <button type="button" class="btn btn-sec" data-salir>${icono('salir', 20)}Cerrar sesión</button>
       </div>
     </div>`;
   cont.querySelector('[data-salir]').addEventListener('click', ctx.cerrarSesion);
+  cont.querySelector('[data-mi-clave]')?.addEventListener('click', () => abrirClave());
+  if (bajoPuerta()) botonHuella(cont.querySelector('.mas-sesion'), { antes: cont.querySelector('[data-salir]') });   // solo si este celular puede entrar con huella o cara
   cont.querySelector('[data-tema]').addEventListener('click', (e) => {
     ctx.alternarTema();
     const b = e.currentTarget;

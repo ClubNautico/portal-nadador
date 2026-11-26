@@ -1,0 +1,31 @@
+/* Cambio de clave, acceso nuevo y elección de clave forzada (js/vistas/clave.js). */
+.clave-fondo { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: rgba(3, 7, 14, .72); overflow-y: auto; }
+.clave-caja { width: min(100%, 440px); max-height: calc(100dvh - 32px); overflow-y: auto; padding: 24px 20px 20px; background: var(--surface-1); border: 1px solid var(--border-strong); border-radius: var(--r-md); box-shadow: var(--shadow-float); display: grid; gap: 16px; }
+.clave-caja h2 { font: var(--fw-semibold) 22px/1.15 var(--font-display); letter-spacing: -.01em; }
+.clave-caja p { color: var(--text-2); line-height: 1.45; }
+.clave-grande { display: block; padding: 18px 12px; text-align: center; background: var(--surface-2); border: 1px solid var(--accent-line); border-radius: var(--r-sm); color: var(--text); font: var(--fw-semibold) clamp(22px, 7vw, 30px)/1.25 var(--font-display); letter-spacing: .04em; word-break: break-word; user-select: all; font-feature-settings: "tnum" 1, "zero" 1; }
+.clave-grande.palabras { letter-spacing: .01em; }
+.clave-opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.clave-opciones .chip { justify-content: center; white-space: normal; text-align: center; padding: 10px 12px; }
+.clave-opciones .chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent-line); color: var(--text); }
+.clave-acciones { display: grid; gap: 10px; }
+.clave-acciones.fila { grid-template-columns: 1fr 1fr; }
+.clave-error { color: var(--bad); font-size: var(--fs-small); line-height: 1.4; }
+.clave-error[hidden], .clave-caja [hidden] { display: none; }
+.clave-nota { font-size: var(--fs-small); color: var(--text-3); }
+.clave-caja .campo input[type="password"] { letter-spacing: .06em; }
+.nad-item { display: grid; gap: 6px; align-content: start; }
+.nad-acceso { justify-self: start; min-height: 36px; padding: 0 12px; font-size: 13px; }
+.enlace-btn { background: none; border: 0; padding: 4px 0; color: var(--accent-text); font: inherit; text-decoration: underline; cursor: pointer; min-height: 32px; }
+.admin-botones { display: flex; flex-wrap: wrap; gap: 10px; }
+/* Entrar con huella o cara */
+.clave-caja h3.huella-sub { font: var(--fw-semibold) 16px/1.2 var(--font-display); color: var(--text); margin-top: 4px; }
+.clave-ok { color: var(--good, #3fb27f); font-size: var(--fs-small); line-height: 1.4; }
+.clave-ok[hidden] { display: none; }
+.huella-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.huella-lista li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--r-sm); }
+.huella-lista .huella-txt { display: grid; gap: 2px; min-width: 0; }
+.huella-lista .huella-txt b { overflow-wrap: anywhere; }
+.huella-lista .huella-txt small { color: var(--text-3); font-size: var(--fs-small); }
+.huella-lista li.huella-vacia { display: block; color: var(--text-3); background: none; border-style: dashed; }
+.huella-lista .chip { flex: none; }

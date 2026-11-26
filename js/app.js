@@ -96,6 +96,7 @@ function hrefVista(nombre, nadId) {
 async function ruta() {
   const mi = ++tokenRuta;
   if (!sesion) { montarLogin(); return; }
+  if (sesion.forzarClave) { claveForzada(); return; }     // entró con un código temporal: no ve nada hasta elegir su clave
   const esAdmin = sesion.rol === 'admin';
   let { nad, vista, params } = leerHash();
 
@@ -212,6 +213,8 @@ function montarShell() {
           <div class="side-botones">
             <button type="button" class="icon-btn" data-accion="tema"></button>
             ${Sesion.bajoPuerta() ? `<a class="btn-lateral" href="/">${icono('inicio', 20)}<span>Panel</span></a>` : ''}
+            ${Sesion.bajoPuerta() ? `<button type="button" class="btn-lateral" data-accion="clave">${icono('usuarios', 20)}<span>Cambiar mi clave</span></button>` : ''}
+            ${Sesion.bajoPuerta() ? `<button type="button" class="btn-lateral" data-accion="huella" hidden>${icono('usuarios', 20)}<span>Entrar con huella o cara</span></button>` : ''}
             <button type="button" class="btn-lateral" data-accion="salir">${icono('salir', 20)}<span>Cerrar sesión</span></button>
           </div>
         </div>
@@ -243,6 +246,12 @@ function montarShell() {
   };
   r.querySelectorAll('[data-accion="tema"]').forEach(pintarBotonTema);
   r.querySelector('[data-accion="salir"]').addEventListener('click', cerrarSesion);
+  r.querySelector('[data-accion="clave"]')?.addEventListener('click', async () => { (await import('./vistas/clave.js')).abrirClave(); });
+  const bHuella = r.querySelector('[data-accion="huella"]');
+  if (bHuella) {
+    bHuella.addEventListener('click', async () => { (await import('./vistas/clave.js')).abrirHuella(); });
+    Sesion.huellaDisponible().then((ok) => { if (ok) bHuella.hidden = false; });     // solo si este celular puede entrar con huella o cara
+  }
   r.querySelectorAll('[data-inicio]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); navegar(a.getAttribute('href')); }));
   r.dataset.rol = sesion.rol;
 }
@@ -293,6 +302,22 @@ function cerrarSesion() {
   montarLogin();
 }
 
+/** Pantalla obligatoria "Elige tu clave nueva" (entrada con código temporal). */
+async function claveForzada() {
+  shell = null;
+  document.body.classList.remove('con-viewbar');
+  document.title = 'Elige tu clave · Club Náutico';
+  raiz.replaceChildren(el('<div class="arranque" role="status"><div class="arranque-caja"><div class="arranque-pulso"></div><p class="arranque-txt">Elige tu clave nueva para seguir.</p></div></div>'));
+  const { abrirClave } = await import('./vistas/clave.js');
+  abrirClave({
+    forzado: true,
+    onListo() {
+      const destino = sesion.rol === 'admin' ? '#/nadadores' : '#/inicio';
+      if (location.hash === destino) ruta(); else location.hash = destino;
+    },
+  });
+}
+
 function montarLogin(mensaje = '') {
   shell = null;
   document.body.classList.remove('con-viewbar');
@@ -301,6 +326,7 @@ function montarLogin(mensaje = '') {
     mensaje,
     async onExito(s) {
       sesion = s;
+      if (s.forzarClave) { claveForzada(); return; }
       const { vista } = leerHash();
       const destino = s.rol === 'admin' ? '#/nadadores' : (VISTAS[vista] ? location.hash : '#/inicio');
       if (location.hash === destino) ruta(); else location.hash = destino;
@@ -322,5 +348,13 @@ addEventListener('hashchange', () => { if (sesion) ruta(); });
     montarLogin('No pudimos reabrir tu sesión. Revisa tu conexión e ingresa de nuevo.');
     return;
   }
-  if (sesion) ruta(); else montarLogin();
+  // El Panel del profesor enlaza a /portal/#/clave: se abre "Cambiar mi clave" y el hash vuelve a la pantalla de inicio.
+  const pedirClave = location.hash === '#/clave';
+  const pedirHuella = location.hash === '#/huella';      // enlace "Mi huella" del Panel del profesor
+  if (pedirClave || pedirHuella) history.replaceState(null, '', location.pathname + location.search + (sesion && sesion.rol === 'admin' ? '#/nadadores' : '#/inicio'));
+  if (sesion) {
+    await ruta();
+    if (pedirClave && Sesion.bajoPuerta() && !sesion.forzarClave) (await import('./vistas/clave.js')).abrirClave();
+    if (pedirHuella && Sesion.bajoPuerta() && !sesion.forzarClave && await Sesion.huellaDisponible()) (await import('./vistas/clave.js')).abrirHuella();
+  } else montarLogin();
 })();

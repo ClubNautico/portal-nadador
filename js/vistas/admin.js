@@ -3,6 +3,7 @@ import { icono } from '../iconos.js';
 import { el, vacio, avatar, guardado } from '../ui.js';
 import { esc, iniciales, normalizar } from '../formato.js';
 import { bajoPuerta } from '../sesion.js';
+import { abrirClave, abrirAcceso, botonHuella } from './clave.js';
 
 export function render(cont, _perfil, ctx) {
   const lista = ctx.sesion.perfiles.slice();
@@ -18,7 +19,7 @@ export function render(cont, _perfil, ctx) {
           <h1 class="vista-h1 admin-h1">Nadadores</h1>
           <p class="admin-sub">${lista.length} ${lista.length === 1 ? 'nadador' : 'nadadores'} · elige uno para ver su portal tal como lo ve él.</p>
         </div>
-        ${bajoPuerta() ? '' : `<button type="button" class="btn btn-sec admin-salir" data-salir>${icono('salir', 18)}Cerrar sesión</button>`}
+        ${bajoPuerta() ? '<div class="admin-botones"><button type="button" class="btn btn-sec" data-mi-clave>Cambiar mi clave</button></div>' : `<button type="button" class="btn btn-sec admin-salir" data-salir>${icono('salir', 18)}Cerrar sesión</button>`}
       </header>
       <div class="accesos adm-herramientas" aria-label="Herramientas para entrenadores">
         <a class="acceso" href="#/comparar"><span class="acceso-ico">${icono('comparar', 22)}</span><span class="acceso-txt"><span class="acceso-tit">Comparar nadadores</span><span class="acceso-sub">Mejor marca de 2 a 4 nadadores en una prueba</span></span>${icono('chev-der', 18, 'acceso-flecha')}</a>
@@ -39,12 +40,13 @@ export function render(cont, _perfil, ctx) {
   const host = cont.querySelector('#ad-lista');
   const estado = cont.querySelector('#ad-estado');
 
-  const tarjeta = (p) => `
+  const hayAcceso = bajoPuerta();   // "Dar acceso nuevo" solo existe con la nube (en la versión pública no hay a dónde guardar)
+  const tarjeta = (p) => `${hayAcceso && p.usuario ? '<div class="nad-item">' : ''}
     <a class="nad-card" href="#/n/${encodeURIComponent(p.id)}/inicio">
       ${avatar(iniciales(p.etiqueta), 48)}
       <span class="nad-txt"><span class="nad-n">${esc(nombre(p))}</span><span class="nad-c">${esc(p.categoria || 'Sin categoría')}${/^\d/.test(p.categoria || '') ? ' años' : ''}${p.grupo ? ` · ${esc(p.grupo)}` : ''}</span></span>
       ${icono('chev-der', 18, 'acceso-flecha')}
-    </a>`;
+    </a>${hayAcceso && p.usuario ? `<button type="button" class="chip nad-acceso" data-acceso="${esc(p.id)}" aria-label="Dar acceso nuevo a ${esc(nombre(p))}">Dar acceso nuevo</button></div>` : ''}`;
 
   function pintar() {
     const nq = normalizar(q);
@@ -85,5 +87,14 @@ export function render(cont, _perfil, ctx) {
   const bAgr = cont.querySelector('#ad-agr');
   bAgr.addEventListener('click', () => { agrupar = !agrupar; bAgr.setAttribute('aria-pressed', agrupar); guardado.poner('portal.admin.agrupar', agrupar); pintar(); });
   cont.querySelector('[data-salir]')?.addEventListener('click', ctx.cerrarSesion);
+  cont.querySelector('[data-mi-clave]')?.addEventListener('click', () => abrirClave());
+  const filaBtns = cont.querySelector('.admin-botones');
+  if (filaBtns) botonHuella(filaBtns);          // solo se muestra si este celular puede entrar con huella o cara
+  host.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-acceso]');
+    if (!b) return;
+    const p = lista.find((x) => x.id === b.dataset.acceso);
+    if (p) abrirAcceso(p);
+  });
   pintar();
 }

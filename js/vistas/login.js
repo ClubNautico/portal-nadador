@@ -43,6 +43,7 @@ export function mostrarLogin(raiz, { onExito, mensaje = '' }) {
                 <button type="button" class="ojo" aria-label="Mostrar contraseña" aria-pressed="false">${icono('ojo', 22)}</button>
               </div>
               <p class="campo-error" id="lg-error" role="alert" hidden></p>
+              <button type="button" class="enlace-btn" id="lg-modo" aria-pressed="false">Mi clave son palabras</button>
             </div>
             <label class="check">
               <input type="checkbox" name="recordar">
@@ -93,8 +94,23 @@ export function mostrarLogin(raiz, { onExito, mensaje = '' }) {
   }
   if (mensaje) mostrarError(mensaje);
 
+  // Dos tipos de clave: XXXX-XXXX-XXXX (con autoformato) o 5 palabras (se escribe tal cual).
+  let palabras = false;
+  const bModo = vista.querySelector('#lg-modo');
+  bModo.addEventListener('click', () => {
+    palabras = !palabras;
+    bModo.setAttribute('aria-pressed', palabras);
+    bModo.textContent = palabras ? 'Mi clave es XXXX-XXXX-XXXX' : 'Mi clave son palabras';
+    pInput.value = '';
+    pInput.maxLength = palabras ? 80 : 14;
+    pInput.placeholder = palabras ? 'palabra-palabra-palabra-palabra-palabra' : 'XXXX-XXXX-XXXX';
+    pInput.autocapitalize = palabras ? 'none' : 'characters';
+    limpiarError();
+    pInput.focus();
+  });
   // Autoformato XXXX-XXXX-XXXX conservando el cursor
   pInput.addEventListener('input', () => {
+    if (palabras) { limpiarError(); return; }
     const pos = pInput.selectionStart ?? pInput.value.length;
     const antes = pInput.value.slice(0, pos).replace(/[^A-Za-z0-9]/g, '').length;
     pInput.value = formatearPassword(pInput.value);
