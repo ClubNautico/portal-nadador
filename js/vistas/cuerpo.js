@@ -8,7 +8,8 @@ import { msDe } from '../datos.js';
 const METRICAS = [
   { id: 'talla', campo: 'talla', nombre: 'Talla', unidad: 'cm' },
   { id: 'peso', campo: 'peso', nombre: 'Peso', unidad: 'kg' },
-  { id: 'musc', campo: 'musc', nombre: 'Masa muscular', unidad: 'kg' },
+  { id: 'musc', campo: 'musc', nombre: 'Masa magra', unidad: 'kg' },
+  { id: 'esqp', campo: 'esqp', nombre: '% Músculo esquelético', unidad: '%' },
   { id: 'grasa', campo: 'grasa', nombre: '% Grasa', unidad: '%' },
   { id: 'k', campo: 'k', nombre: 'Índice K', unidad: '' },
 ];
@@ -59,7 +60,7 @@ export function render(cont, p) {
     cont.querySelector('#cu-vacio').replaceWith(vacio({
       icon: 'cuerpo',
       titulo: 'Aún no hay mediciones registradas',
-      texto: 'Cuando te midan por primera vez, aquí verás cómo cambian tu talla, tu peso y tu masa muscular mientras creces.',
+      texto: 'Cuando te midan por primera vez, aquí verás cómo cambian tu talla, tu peso y tu masa magra mientras creces.',
     }));
     return;
   }
@@ -140,7 +141,7 @@ export function render(cont, p) {
         <th scope="row" class="cu-fecha">${esc(fechaCorta(r.f))}</th>
         ${celda(r.talla)}${celdaDelta(dTalla.get(r))}
         ${celda(r.peso)}${celdaDelta(dPeso.get(r))}
-        ${celda(r.musc)}${celda(r.grasa)}${celda(r.k, false)}
+        ${celda(r.musc)}${celda(r.esqp)}${celda(r.grasa)}${celda(r.k, false)}
       </tr>`).join('');
 
   cont.innerHTML = `
@@ -171,7 +172,8 @@ export function render(cont, p) {
               <th scope="col">Fecha</th>
               <th scope="col" class="num">Talla<span class="u-m">cm</span></th><th scope="col" class="num">Cambio</th>
               <th scope="col" class="num">Peso<span class="u-m">kg</span></th><th scope="col" class="num">Cambio</th>
-              <th scope="col" class="num">Músculo<span class="u-m">kg</span></th>
+              <th scope="col" class="num">Masa magra<span class="u-m">kg</span></th>
+              <th scope="col" class="num">Músculo esquelético<span class="u-m">%</span></th>
               <th scope="col" class="num">Grasa<span class="u-m">%</span></th>
               <th scope="col" class="num">Índice K</th>
             </tr></thead>
